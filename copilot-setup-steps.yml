@@ -1,76 +1,45 @@
 # Copilot Setup Steps
 # This file defines the environment setup steps for Copilot agents
 # These steps will be executed to prepare the environment with necessary tools
+# Using GitHub Marketplace Actions for reliable, maintained installations
 
 version: 1.0
 
 setup_steps:
-  # Install Terraform
-  - name: Install Terraform
-    description: Install the latest stable version of Terraform CLI
-    type: bash
-    commands:
-      - |
-        # Download and install Terraform
-        # Using HashiCorp's checkpoint API with error handling
-        TERRAFORM_VERSION=$(curl -sSf --max-time 10 https://checkpoint-api.hashicorp.com/v1/check/terraform | jq -r '.current_version')
-        if [ -z "$TERRAFORM_VERSION" ] || [ "$TERRAFORM_VERSION" = "null" ]; then
-          echo "Failed to fetch Terraform version, using fallback"
-          TERRAFORM_VERSION="1.9.0"  # Update this fallback version periodically
-        fi
-        echo "Installing Terraform version: $TERRAFORM_VERSION"
-        
-        # Determine architecture
-        ARCH=$(uname -m)
-        case $ARCH in
-          x86_64) ARCH="amd64" ;;
-          aarch64) ARCH="arm64" ;;
-          armv7l) ARCH="arm" ;;
-        esac
-        
-        # Download Terraform
-        curl -sSfL --max-time 30 -o terraform.zip "https://releases.hashicorp.com/terraform/${TERRAFORM_VERSION}/terraform_${TERRAFORM_VERSION}_linux_${ARCH}.zip"
-        
-        # Install Terraform
-        unzip -o terraform.zip
-        sudo mv terraform /usr/local/bin/
-        rm terraform.zip
-        
-        # Verify installation
-        terraform version
+  # Install Terraform using HashiCorp's official action
+  - name: Setup Terraform
+    description: Install Terraform CLI using HashiCorp's official setup action
+    type: action
+    action: hashicorp/setup-terraform@v3
+    with:
+      terraform_version: latest
+      terraform_wrapper: false
     verify:
       command: terraform version
       expected_output_contains: "Terraform v"
 
-  # Install TFLint
-  - name: Install TFLint
+  # Install TFLint using the official marketplace action
+  - name: Setup TFLint
     description: Install TFLint for Terraform linting and validation
-    type: bash
-    commands:
+    type: action
+    action: terraform-linters/setup-tflint@v4
+    with:
+      tflint_version: latest
+    post_install:
       - |
-        # Install TFLint using the official installation script
-        # Download script, verify it exists, then execute
-        curl -sSfL https://raw.githubusercontent.com/terraform-linters/tflint/master/install_linux.sh -o /tmp/install_tflint.sh
-        if [ ! -s /tmp/install_tflint.sh ]; then
-          echo "Failed to download TFLint installation script"
-          exit 1
-        fi
-        bash /tmp/install_tflint.sh
-        rm -f /tmp/install_tflint.sh
-        
         # Verify installation
         tflint --version
     verify:
       command: tflint --version
       expected_output_contains: "TFLint version"
 
-  # Install Checkov
-  - name: Install Checkov
+  # Install Checkov using the marketplace action
+  - name: Setup Checkov
     description: Install Checkov for static code analysis and security scanning
     type: bash
     commands:
       - |
-        # Install Checkov using pip
+        # Install Checkov using pip3 (Checkov GitHub Action is for scanning, not setup)
         pip3 install --upgrade pip
         pip3 install checkov
         
@@ -79,22 +48,9 @@ setup_steps:
     verify:
       command: checkov --version
       expected_output_contains: "checkov version"
-
-  # Install jq (helper tool for JSON processing)
-  - name: Install jq
-    description: Install jq for JSON processing (used by scripts)
-    type: bash
-    commands:
-      - |
-        # Install jq
-        sudo apt-get update -qq
-        sudo apt-get install -y jq
-        
-        # Verify installation
-        jq --version
-    verify:
-      command: jq --version
-      expected_output_contains: "jq"
+    notes:
+      - "Using pip3 installation as bridgecrewio/checkov-action is designed for scanning, not setup"
+      - "For CI/CD workflows, use: uses: bridgecrewio/checkov-action@v12"
 
   # Setup Terraform environment
   - name: Setup Terraform Environment
@@ -119,6 +75,8 @@ setup_steps:
 
 notes:
   - "These setup steps prepare the environment for Terraform module development and validation"
-  - "All tools are installed with their latest stable versions"
-  - "TFLint and Checkov provide comprehensive validation and security scanning"
+  - "Using GitHub Marketplace Actions for Terraform and TFLint ensures maintained, reliable installations"
+  - "hashicorp/setup-terraform@v3: Official HashiCorp action for Terraform CLI installation"
+  - "terraform-linters/setup-tflint@v4: Official TFLint action for linting setup"
+  - "Checkov uses pip3 as the GitHub Action is designed for scanning workflows, not environment setup"
   - "The environment is optimized for CI/CD automation with TF_IN_AUTOMATION flag"
