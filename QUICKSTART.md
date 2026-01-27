@@ -3,13 +3,12 @@
 ## 🚀 Get Started in 3 Steps
 
 ### 1. Setup Complete ✅
-The `copilot-setup-steps.yml` file will automatically install:
-- Terraform
-- TFlint  
-- Checkov
-- Required utilities
+The `copilot-setup-steps.yml` file will automatically install using GitHub Marketplace Actions:
+- **Terraform** - hashicorp/setup-terraform@v3
+- **TFLint** - terraform-linters/setup-tflint@v4
+- **Checkov** - pip3 installation
 
-No manual installation needed!
+No manual installation needed! All tools use official, maintained actions.
 
 ### 2. Invoke the Agent
 In GitHub Copilot Chat, use:

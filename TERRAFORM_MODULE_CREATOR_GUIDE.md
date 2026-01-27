@@ -9,12 +9,17 @@ The Terraform Module Creator agent is designed to help you create and manage pri
 ## Files Included
 
 ### 1. `copilot-setup-steps.yml`
-This file contains the environment setup steps that install necessary tools:
-- **Terraform** - Latest stable version with architecture detection
-- **TFlint** - Terraform linting tool for best practices validation
-- **Checkov** - Static code analysis tool for security scanning
-- **jq** - JSON processing utility
+This file contains the environment setup steps using GitHub Marketplace Actions:
+- **Terraform** - hashicorp/setup-terraform@v3 (official HashiCorp action)
+- **TFlint** - terraform-linters/setup-tflint@v4 (official TFLint action)
+- **Checkov** - pip3 installation (bridgecrewio/checkov-action is for scanning workflows)
 - **Terraform environment** - Configured for CI/CD automation
+
+**Benefits of using Marketplace Actions:**
+- Maintained by official teams
+- Reliable and tested installations
+- Automatic updates and security patches
+- Cross-platform compatibility
 
 ### 2. `agents/terraform-module-creator.agent.md`
 The custom Copilot agent that:
