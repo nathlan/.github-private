@@ -9,7 +9,8 @@ plugin "terraform" {
 
 plugin "azurerm" {
   enabled = true
-  version = "0.25.1"
+  # Update to the latest version from: https://github.com/terraform-linters/tflint-ruleset-azurerm/releases
+  version = "0.25.1"  # Consider updating to latest stable version
   source  = "github.com/terraform-linters/tflint-ruleset-azurerm"
 }
 

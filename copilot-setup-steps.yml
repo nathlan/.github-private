@@ -12,7 +12,12 @@ setup_steps:
     commands:
       - |
         # Download and install Terraform
-        TERRAFORM_VERSION=$(curl -s https://checkpoint-api.hashicorp.com/v1/check/terraform | jq -r '.current_version')
+        # Using HashiCorp's checkpoint API with error handling
+        TERRAFORM_VERSION=$(curl -sSf --max-time 10 https://checkpoint-api.hashicorp.com/v1/check/terraform | jq -r '.current_version')
+        if [ -z "$TERRAFORM_VERSION" ] || [ "$TERRAFORM_VERSION" = "null" ]; then
+          echo "Failed to fetch Terraform version, using fallback"
+          TERRAFORM_VERSION="1.7.0"
+        fi
         echo "Installing Terraform version: $TERRAFORM_VERSION"
         
         # Determine architecture
@@ -44,7 +49,14 @@ setup_steps:
     commands:
       - |
         # Install TFLint using the official installation script
-        curl -s https://raw.githubusercontent.com/terraform-linters/tflint/master/install_linux.sh | bash
+        # Download script, verify it exists, then execute
+        curl -sSfL https://raw.githubusercontent.com/terraform-linters/tflint/master/install_linux.sh -o /tmp/install_tflint.sh
+        if [ ! -s /tmp/install_tflint.sh ]; then
+          echo "Failed to download TFLint installation script"
+          exit 1
+        fi
+        bash /tmp/install_tflint.sh
+        rm -f /tmp/install_tflint.sh
         
         # Verify installation
         tflint --version
