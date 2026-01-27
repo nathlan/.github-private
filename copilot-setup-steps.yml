@@ -16,7 +16,7 @@ setup_steps:
         TERRAFORM_VERSION=$(curl -sSf --max-time 10 https://checkpoint-api.hashicorp.com/v1/check/terraform | jq -r '.current_version')
         if [ -z "$TERRAFORM_VERSION" ] || [ "$TERRAFORM_VERSION" = "null" ]; then
           echo "Failed to fetch Terraform version, using fallback"
-          TERRAFORM_VERSION="1.7.0"
+          TERRAFORM_VERSION="1.9.0"  # Update this fallback version periodically
         fi
         echo "Installing Terraform version: $TERRAFORM_VERSION"
         
@@ -29,7 +29,7 @@ setup_steps:
         esac
         
         # Download Terraform
-        curl -Lo terraform.zip "https://releases.hashicorp.com/terraform/${TERRAFORM_VERSION}/terraform_${TERRAFORM_VERSION}_linux_${ARCH}.zip"
+        curl -sSfL --max-time 30 -o terraform.zip "https://releases.hashicorp.com/terraform/${TERRAFORM_VERSION}/terraform_${TERRAFORM_VERSION}_linux_${ARCH}.zip"
         
         # Install Terraform
         unzip -o terraform.zip

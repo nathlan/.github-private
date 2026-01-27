@@ -100,8 +100,8 @@ Version management workflow:
 - Reference AVM modules from the official registry: `registry.terraform.io/Azure/avm-*`
 - Pin AVM module versions for stability:
   - Use pessimistic constraint for minor updates: `version = "~> 1.0"` (allows 1.0.x but not 2.0)
-  - Use exact version for strict control: `version = "= 1.0.5"` (only this specific version)
-  - Recommended: Start with `~>` for flexibility, switch to `=` for production stability
+  - Use exact version for strict control: `version = "1.0.5"` (only this specific version)
+  - Recommended: Start with `~>` for flexibility, switch to exact version for production stability
 - Document which AVM modules are consumed in README
 - Follow AVM naming conventions and patterns
 
