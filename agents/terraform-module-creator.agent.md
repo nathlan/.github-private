@@ -8,13 +8,12 @@ mcp-servers:
     command: "docker"
     args: ["run", "-i", "--rm", "hashicorp/terraform-mcp-server:latest"]
     tools: ["*"]
-  github:
+  github-mcp-server:
     type: "http"
     url: "https://api.githubcopilot.com/mcp/"
     headers:
-      Authorization: "Bearer ${{ secrets.COPILOT_MCP_GITHUB_PAT }}"
-    env:
-      GITHUB_TOOLSETS: "repos,pull_requests,git"
+      "X-MCP-Toolsets":  
+         "repos,issues,users,pull_requests,code_security,secret_protection,actions,web_search"
     tools: ["*"]
 ---
 
