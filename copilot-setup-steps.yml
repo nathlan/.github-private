@@ -1,0 +1,112 @@
+# Copilot Setup Steps
+# This file defines the environment setup steps for Copilot agents
+# These steps will be executed to prepare the environment with necessary tools
+
+version: 1.0
+
+setup_steps:
+  # Install Terraform
+  - name: Install Terraform
+    description: Install the latest stable version of Terraform CLI
+    type: bash
+    commands:
+      - |
+        # Download and install Terraform
+        TERRAFORM_VERSION=$(curl -s https://checkpoint-api.hashicorp.com/v1/check/terraform | jq -r '.current_version')
+        echo "Installing Terraform version: $TERRAFORM_VERSION"
+        
+        # Determine architecture
+        ARCH=$(uname -m)
+        case $ARCH in
+          x86_64) ARCH="amd64" ;;
+          aarch64) ARCH="arm64" ;;
+          armv7l) ARCH="arm" ;;
+        esac
+        
+        # Download Terraform
+        curl -Lo terraform.zip "https://releases.hashicorp.com/terraform/${TERRAFORM_VERSION}/terraform_${TERRAFORM_VERSION}_linux_${ARCH}.zip"
+        
+        # Install Terraform
+        unzip -o terraform.zip
+        sudo mv terraform /usr/local/bin/
+        rm terraform.zip
+        
+        # Verify installation
+        terraform version
+    verify:
+      command: terraform version
+      expected_output_contains: "Terraform v"
+
+  # Install TFLint
+  - name: Install TFLint
+    description: Install TFLint for Terraform linting and validation
+    type: bash
+    commands:
+      - |
+        # Install TFLint using the official installation script
+        curl -s https://raw.githubusercontent.com/terraform-linters/tflint/master/install_linux.sh | bash
+        
+        # Verify installation
+        tflint --version
+    verify:
+      command: tflint --version
+      expected_output_contains: "TFLint version"
+
+  # Install Checkov
+  - name: Install Checkov
+    description: Install Checkov for static code analysis and security scanning
+    type: bash
+    commands:
+      - |
+        # Install Checkov using pip
+        pip3 install --upgrade pip
+        pip3 install checkov
+        
+        # Verify installation
+        checkov --version
+    verify:
+      command: checkov --version
+      expected_output_contains: "checkov version"
+
+  # Install jq (helper tool for JSON processing)
+  - name: Install jq
+    description: Install jq for JSON processing (used by scripts)
+    type: bash
+    commands:
+      - |
+        # Install jq
+        sudo apt-get update -qq
+        sudo apt-get install -y jq
+        
+        # Verify installation
+        jq --version
+    verify:
+      command: jq --version
+      expected_output_contains: "jq"
+
+  # Setup Terraform environment
+  - name: Setup Terraform Environment
+    description: Configure Terraform environment variables and plugins
+    type: bash
+    commands:
+      - |
+        # Create Terraform plugin directory
+        mkdir -p ~/.terraform.d/plugins
+        
+        # Set environment variables
+        echo "export TF_PLUGIN_CACHE_DIR=~/.terraform.d/plugin-cache" >> ~/.bashrc
+        echo "export TF_IN_AUTOMATION=true" >> ~/.bashrc
+        
+        # Create plugin cache directory
+        mkdir -p ~/.terraform.d/plugin-cache
+        
+        echo "Terraform environment setup complete"
+    verify:
+      command: test -d ~/.terraform.d/plugin-cache && echo "success"
+      expected_output_contains: "success"
+
+notes:
+  - "These setup steps prepare the environment for Terraform module development and validation"
+  - "All tools are installed with their latest stable versions"
+  - "TFLint and Checkov provide comprehensive validation and security scanning"
+  - "The environment is optimized for CI/CD automation with TF_IN_AUTOMATION flag"
