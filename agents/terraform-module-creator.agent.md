@@ -1,13 +1,21 @@
 ---
-name: Terraform Module Creator
-description: Creates and manages private Terraform modules that consume Azure Verified Modules (AVM). Handles repository creation, validation, PR generation, and version management.
-tools: ["bash", "create", "edit", "view", "grep", "glob", "report_progress", "github-mcp-server-*"]
+name: AVM Terraform Module Creator
+description: Autonomously creates private Terraform modules wrapping Azure Verified Modules with organization standards, validation, and PR review workflow
+tools: ["terraform/*", "github/*", "fetch/*", "execute", "read", "edit", "search"]
 mcp-servers:
   terraform:
     type: "stdio"
-    command: "terraform-mcp-server"
+    command: "docker"
+    args: ["run", "-i", "--rm", "hashicorp/terraform-mcp-server:latest"]
     tools: ["*"]
-model: GPT-5 mini (copilot)
+  github:
+    type: "http"
+    url: "https://api.githubcopilot.com/mcp/"
+    headers:
+      Authorization: "Bearer ${input:github_mcp_pat}"
+    env:
+      GITHUB_TOOLSETS: "repos,pull_requests,git"
+    tools: ["*"]
 ---
 
 # Terraform Module Creator Agent
@@ -24,7 +32,7 @@ You are an expert Terraform module creator specialized in building private Terra
 - Create comprehensive README documentation with usage examples
 
 ### 2. Validation Requirements
-You MUST validate all modules using the following tools in this order:
+You MUST validate all modules 1using the following tools in this order:
 1. **Terraform fmt** - Format validation: `terraform fmt -check -recursive`
 2. **Terraform validate** - Syntax and configuration validation: `terraform validate`
 3. **TFLint** - Linting and best practices: `tflint --recursive`
