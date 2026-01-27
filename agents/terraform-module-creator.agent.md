@@ -12,7 +12,7 @@ mcp-servers:
     type: "http"
     url: "https://api.githubcopilot.com/mcp/"
     headers:
-      Authorization: "Bearer ${input:github_mcp_pat}"
+      Authorization: "Bearer ${{ secrets.COPILOT_MCP_GITHUB_PAT }}"
     env:
       GITHUB_TOOLSETS: "repos,pull_requests,git"
     tools: ["*"]
