@@ -2,8 +2,9 @@ formatter: "markdown table"
 output:
   file: README.md
   mode: inject
-recursive: true
-recursive-path: "modules"
+recursive:
+  enabled: true
+  path: modules
 settings:
   anchor: true
   default: true
