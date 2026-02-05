@@ -29,15 +29,7 @@ jobs:
       - name: Setup TFLint
         uses: terraform-linters/setup-tflint@v4
         with:
-          # Pre-install the Azure ruleset to avoid firewall issues
           tflint_version: latest
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Install TFLint Azure Ruleset
-        run: |
-          # Initialize TFLint plugins before firewall is enabled
-          mkdir -p ~/.tflint.d/plugins
-          tflint --init
 
       - name: Install terraform-docs
         run: |
@@ -56,10 +48,4 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           python -m pip install checkov
-
-      - name: Configure Checkov for offline operation
-        run: |
-          # Set environment variable to skip Prisma Cloud API calls
-          echo "BC_SKIP_MAPPING=TRUE" >> $GITHUB_ENV
-          # Verify checkov is installed
           checkov --version
