@@ -89,9 +89,9 @@ rule "terraform_standard_module_structure" {
 }
 
 # Azure-specific Rules
-rule "azurerm_resource_tag" {
-  enabled = true
-}
+# The azurerm plugin provides resource-specific validation rules
+# See: https://github.com/terraform-linters/tflint-ruleset-azurerm/tree/main/docs/rules
+# Example: azurerm_kubernetes_cluster_invalid_node_count
 
 # Disable rules that might be too strict for some use cases
 # Uncomment to disable specific rules
