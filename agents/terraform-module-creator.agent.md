@@ -53,7 +53,7 @@ You are an expert Terraform module creator specialized in building private Terra
      - **ALWAYS create as draft initially**: Use `draft: true`
      - This allows for validation before marking as ready
      - **Include release information in PR description**: 
-       - Proposed Release Version (e.g., v1.0.0, v0.2.0)
+       - Proposed Release Version (e.g., v0.1.0, v0.2.0, v1.0.0)
        - Version Justification (MAJOR/MINOR/PATCH reasoning)
        - Note that release will be created automatically on merge
 5. **Mark Remote PR as Ready**: Use `github-mcp-server update_pull_request` with `draft: false`
@@ -282,7 +282,6 @@ When creating a new module repository:
 
    permissions:
      contents: write
-     pull-requests: read
 
    jobs:
      release:
@@ -294,22 +293,20 @@ When creating a new module repository:
              fetch-depth: 0
 
          - name: Release on merge
-           uses: ridedott/release-me-action@master
+           uses: dexwritescode/release-on-merge-action@v1
            with:
-             release-branches: '["main"]'
-             node-module: false
+             initial-version: '0.1.0'
            env:
              GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
    ```
    
    **Release Workflow Features:**
    - Automatically creates releases when PRs are merged to main
-   - Uses semantic versioning based on conventional commits (feat, fix, BREAKING CHANGE)
-   - Creates Git tags following Terraform registry requirements (e.g., v1.0.0, v1.1.0)
+   - Uses `dexwritescode/release-on-merge-action@v1` action
+   - **Initial release version**: `0.1.0` (not 1.0.0)
+   - Subsequent releases follow semantic versioning
+   - Creates Git tags following Terraform registry requirements (e.g., v0.1.0, v0.2.0, v1.0.0)
    - Generates changelog from commit messages
-   - **BREAKING CHANGE** commits trigger MAJOR version bumps
-   - **feat** commits trigger MINOR version bumps
-   - **fix** commits trigger PATCH version bumps
    
    **Semantic Versioning Guidelines:**
    - **MAJOR (X.0.0)**: Breaking changes (e.g., removing inputs, changing validation rules)
@@ -327,7 +324,7 @@ When creating a new module repository:
    
    **In PR Comments:**
    When creating PRs with changes, always include:
-   - **Proposed Release Version**: The semantic version that will be created (e.g., v1.0.0, v0.2.0)
+   - **Proposed Release Version**: The semantic version that will be created (e.g., v0.1.0 for initial releases, v0.2.0, v1.0.0)
    - **Version Justification**: Why this version number (MAJOR/MINOR/PATCH)
    - Note that the workflow will create the release automatically on merge
 
