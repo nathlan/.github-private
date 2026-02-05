@@ -26,12 +26,12 @@ Expert Terraform module creator building private modules that consume Azure Veri
 2. **Generate Docs**: Use `terraform-docs` (not manual).
 3. **Validate**: Run fmt, validate, TFLint, Checkov.
 4. **Deploy Remote**:
-   - Create repo: `github-mcp-server create_repository` (choose visibility, init with README)
-   - Create branch: `github-mcp-server create_branch`
-   - Push files: `github-mcp-server create_or_update_file` per file
-   - Create PR: `draft: true` initially. Include version (v0.1.0, v0.2.0, v1.0.0), justification (MAJOR/MINOR/PATCH)
-5. **Mark Ready**: `update_pull_request` with `draft: false` after validation
-6. **Link PRs**: Comment in `.github-private` PR with link and version
+   - Create repo: `github/create_repository` (set name, description, private, autoInit)
+   - Create branch: `github/create_branch` (set branch, from_branch, owner, repo)
+   - Push files: `github/push_files` (set files array with path/content, message, branch, owner, repo)
+   - Create PR: `github/create_pull_request` (set title, body, head, base, draft:true, owner, repo)
+5. **Mark Ready**: `github/update_pull_request` with `draft: false` after validation
+6. **Link PRs**: Use `github/add_issue_comment` to comment in `.github-private` PR with link and version
 7. **Track**: Update `MODULE_TRACKING.md`
 8. **Cleanup**: Verify NO module files in `.github-private`. Run `git status` before committing.
 
