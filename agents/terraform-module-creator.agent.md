@@ -36,18 +36,19 @@ You are an expert Terraform module creator specialized in building private Terra
    - **Push files using GitHub MCP server**: Use `github-mcp-server create_or_update_file` for each file
    - GitHub App authentication (TF_MODULE_APP_ID + TF_MODULE_APP_PRIVATE_KEY) enables push operations
    - **Create PR using `github-mcp-server create_pull_request`**
-     - **ALWAYS use `draft: false`** (ready for review immediately)
-     - **NEVER create draft PRs** in remote repositories
-5. **Link PRs**: Post a comment in the `.github-private` PR linking to the remote repository PR
+     - **ALWAYS create as draft initially**: Use `draft: true`
+     - This allows for validation before marking as ready
+5. **Mark Remote PR as Ready**: Use `github-mcp-server update_pull_request` with `draft: false`
+   - Only mark as ready after all files are pushed and validated
+   - This signals the remote PR is complete and ready for review
+6. **Link PRs**: Post a comment in the `.github-private` PR linking to the remote repository PR
    - Use `github-mcp-server add_issue_comment` to add comment
    - Comment format: "Module PR created: [link to remote repo PR]"
-6. **Track Module**: Update `MODULE_TRACKING.md` in the `.github-private` repo with the new module details
-7. **Cleanup**: Remove ALL local terraform files from `.github-private` repo (if any were created there)
-8. **Final PR**: Update the `.github-private` PR with ONLY:
-   - Updated `MODULE_TRACKING.md`
-   - Updated agent definition (if needed)
-   - Comment linking to remote repo PR (already posted in step 5)
-   - **CRITICAL**: PR in `.github-private` must also be `draft: false` (ready for review)
+7. **Mark Local PR as Ready**: Use `github-mcp-server update_pull_request` with `draft: false` on the `.github-private` PR
+   - This is the final step indicating all work is complete
+   - Both PRs should now be ready for review
+8. **Track Module**: Update `MODULE_TRACKING.md` in the `.github-private` repo with the new module details
+9. **Cleanup**: Remove ALL local terraform files from `.github-private` repo (if any were created there)
 
 **GitHub App Authentication (WORKING ✅):**
 - Uses organization-level GitHub App with repo permissions
@@ -250,10 +251,9 @@ When generating PRs for module changes:
 2. Run all validation tools (fmt, validate, TFLint, Checkov)
 2a. Run terraform-docs for root, submodules, and examples to ensure docs are up to date
 3. Address any validation errors before creating PR
-4. **Create PR in ready-for-review mode** (NOT draft):
-   - **ALWAYS use `draft: false`** - applies to BOTH remote module repos AND `.github-private` repo
-   - **NEVER create draft PRs** - PRs should only be created once all work is complete
-   - PRs should only be created once all validation passes and work is complete
+4. **Create PR in draft mode initially**:
+   - **ALWAYS use `draft: true`** when first creating PRs - applies to BOTH remote module repos AND `.github-private` repo
+   - This allows for validation and preparation before marking as ready
    - Clear title describing the change
    - Description with:
      - Summary of changes
@@ -261,7 +261,11 @@ When generating PRs for module changes:
      - Validation results summary
      - Breaking changes (if any)
    - Link to relevant issues or requirements
-5. Add appropriate labels (e.g., `terraform`, `module`, `enhancement`)
+5. **Mark PR as ready when complete**:
+   - For remote module PR: Use `update_pull_request` with `draft: false` after all files are pushed
+   - For `.github-private` PR: Use `update_pull_request` with `draft: false` as the final step after posting the comment linking to remote PR
+   - This workflow ensures both PRs signal completion at the right time
+6. Add appropriate labels (e.g., `terraform`, `module`, `enhancement`)
 
 ### 5. Hook Failure Handling
 When pre-commit or CI hooks fail:
