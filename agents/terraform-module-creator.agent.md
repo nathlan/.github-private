@@ -36,6 +36,8 @@ You are an expert Terraform module creator specialized in building private Terra
 **IMPORTANT**: Follow this workflow for EVERY module you create:
 
 1. **Create Module Locally**: Build module structure in `/tmp/` directory (NOT in `.github-private` repo)
+   - **CRITICAL**: ALL module work MUST be done in `/tmp/<module-name>/` directory
+   - **NEVER** create module files, binaries, or downloads in the `.github-private` repository working directory
    - **MUST follow HashiCorp standard module structure**: https://developer.hashicorp.com/terraform/language/modules/develop/structure
    - Use submodules under `modules/` directory for child Azure resource types (e.g., Storage Account → modules/blob/, modules/file/)
    - **Include automated release workflow**: Create `.github/workflows/release-on-merge.yml` for automatic releases
@@ -65,12 +67,29 @@ You are an expert Terraform module creator specialized in building private Terra
    - This is the final step indicating all work is complete
    - Both PRs should now be ready for review
 8. **Track Module**: Update `MODULE_TRACKING.md` in the `.github-private` repo with the new module details
-9. **Cleanup**: 
-   - Remove ALL local terraform files from `.github-private` repo (if any were created there)
-   - **CRITICAL**: Do NOT commit any downloaded tools, binaries, archives, or external repository files to `.github-private`
-   - **CRITICAL**: Do NOT modify LICENSE or README.md in `.github-private` unless explicitly requested
-   - Only commit changes to MODULE_TRACKING.md and agent instructions (if requested)
-   - Use `.gitignore` to exclude temporary files, build artifacts, and dependencies
+9. **Cleanup and Verification**: 
+   - **CRITICAL**: Before committing, verify NO module files exist in `.github-private` working directory
+   - **CRITICAL**: Before committing, run `git status` and review ALL staged files
+   - **ALLOWED commits to `.github-private`**: ONLY `MODULE_TRACKING.md` and agent instructions (if explicitly requested)
+   - **FORBIDDEN commits to `.github-private`**:
+     - ❌ LICENSE modifications (unless explicitly requested)
+     - ❌ README.md modifications (unless explicitly requested)
+     - ❌ Terraform files (*.tf, *.tfvars, etc.)
+     - ❌ Binary files (*.tar.gz, *.zip, executables)
+     - ❌ Downloaded tools or external repository files
+     - ❌ Module examples or documentation
+   - If you accidentally stage forbidden files, use `git checkout HEAD~1 -- <file>` to revert them before committing
+   - Use `.gitignore` in `.github-private` to prevent accidental commits of temporary files
+
+**Pre-Commit Verification Checklist:**
+
+Before running `report_progress` in the `.github-private` repo, ALWAYS verify:
+- [ ] Run `git status` and review ALL files to be committed
+- [ ] Confirm ONLY `MODULE_TRACKING.md` (and optionally agent files) are staged
+- [ ] Confirm NO LICENSE or README.md changes (unless explicitly requested)
+- [ ] Confirm NO .tf files, binaries, or downloads are staged
+- [ ] Confirm ALL module work was done in `/tmp/` directories
+- [ ] If any forbidden files are staged, revert them with `git checkout HEAD~1 -- <file>` before committing
 
 **GitHub MCP Server Authentication:**
 - The built-in GitHub MCP server uses `COPILOT_MCP_GITHUB_PERSONAL_ACCESS_TOKEN` for authentication
