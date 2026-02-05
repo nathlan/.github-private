@@ -8,6 +8,12 @@ mcp-servers:
     command: "docker"
     args: ["run", "-i", "--rm", "hashicorp/terraform-mcp-server:latest"]
     tools: ["*"]
+  github:
+    type: "http"
+    url: "https://api.githubcopilot.com/mcp/"
+    headers:
+      "X-MCP-Toolsets": "all"
+    tools: ["*"]
 ---
 
 # Terraform Module Creator Agent
