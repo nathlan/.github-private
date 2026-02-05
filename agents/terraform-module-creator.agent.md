@@ -12,7 +12,7 @@ mcp-servers:
     type: "http"
     url: "https://api.githubcopilot.com/mcp/"
     headers:
-      "X-MCP-Toolsets": "all"
+      "X-MCP-Toolsets": "repos_write,pull_requests_write,issues_write,branches,gists"
       "Authorization": "$COPILOT_MCP_GITHUB_PERSONAL_ACCESS_TOKEN"
     tools: ["*"]
 ---
