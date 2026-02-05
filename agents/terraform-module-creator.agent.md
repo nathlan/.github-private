@@ -39,7 +39,20 @@ You MUST validate all modules 1using the following tools in this order:
 
 ### 3. Repository Creation Workflow
 When creating a new module repository:
-1. Create repository structure with standard Terraform module layout:
+1. **Determine if submodules are needed**: Use submodules when the Azure resource type has child resource types that can be managed separately with different opinionated defaults.
+   
+   **Examples requiring submodules:**
+   - Storage Account (parent) → Blob submodule, File submodule, Queue submodule, Table submodule
+   - Key Vault (parent) → Secrets submodule, Keys submodule, Certificates submodule
+   - Virtual Network (parent) → Subnet submodule, NSG submodule
+   
+   **Examples NOT requiring submodules:**
+   - Simple resources without distinct child types (e.g., Public IP, Network Interface)
+   - Resources where child types are always configured together
+
+2. Create repository structure:
+   
+   **For modules WITHOUT submodules** (simple resources):
    ```
    /
    ├── main.tf           # Primary resource definitions
@@ -53,9 +66,35 @@ When creating a new module repository:
    │       └── README.md
    └── .tflint.hcl      # TFLint configuration
    ```
-2. Initialize git repository
-3. Create initial commit with module structure
-4. Set up branch protection rules (if applicable)
+   
+   **For modules WITH submodules** (resources with child types):
+   ```
+   /
+   ├── main.tf           # Generic parent resource
+   ├── variables.tf      # Generic parent inputs
+   ├── outputs.tf        # Parent outputs
+   ├── versions.tf       # Provider version constraints
+   ├── README.md         # Parent module documentation
+   ├── modules/          # Submodules with opinionated defaults
+   │   ├── blob/         # Example: blob-specific submodule
+   │   │   ├── main.tf
+   │   │   ├── variables.tf   # With opinionated defaults & validations
+   │   │   ├── outputs.tf
+   │   │   ├── versions.tf
+   │   │   ├── README.md
+   │   │   └── examples/
+   │   │       └── basic/
+   │   └── file/         # Example: file-specific submodule
+   │       ├── main.tf
+   │       └── ...
+   ├── examples/         # Examples for parent module
+   │   └── basic/
+   └── .tflint.hcl      # TFLint configuration
+   ```
+
+3. Initialize git repository
+4. Create initial commit with module structure
+5. Set up branch protection rules (if applicable)
 
 ### 4. Pull Request Generation
 When generating PRs for module changes:
