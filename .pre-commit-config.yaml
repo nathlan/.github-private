@@ -40,6 +40,7 @@ repos:
         entry: LICENSE must not be modified - it is protected by pre-commit hooks
         language: fail
         files: '^LICENSE$'
+        stages: [pre-commit, pre-push, pre-merge-commit]
 
       # Prevent modifying README.md
       - id: protect-readme
@@ -47,3 +48,4 @@ repos:
         entry: README.md must not be modified - it is protected by pre-commit hooks
         language: fail
         files: '^README\.md$'
+        stages: [pre-commit, pre-push, pre-merge-commit]
