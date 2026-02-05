@@ -410,3 +410,308 @@ checkov -d . --config-file .checkov.yml --skip-path .terraform
 - Total: 21 checks, 1 security finding
 
 **`.gitignore` Status**: Keep `.terraform/` in `.gitignore` - it's correct to not commit downloaded modules.
+
+### CRITICAL: Checkov Traceability Requirement (2026-02-05)
+
+**Issue**: Wrapper modules can pass Checkov with 0 failures while still introducing security vulnerabilities when adding functionality (like submodules), because the wrapper hasn't implemented those features yet.
+
+**Real-World Example**:
+When adding a file services submodule to the storage account module:
+1. Wrapper passes Checkov (0 failures) ✅
+2. But file services in external AVM has 10 security failures ⚠️
+3. If you don't scan external file services module and set secure defaults, you introduce vulnerabilities
+4. Checkov won't catch this until after the vulnerable code is implemented
+
+**Problem**: Previous instructions said "wrapper must pass Checkov" but didn't require TRACING BACK to external failures and ensuring each is addressed. This creates a false sense of security.
+
+**Critical Gap**: Just checking "wrapper passes" is insufficient. You must:
+1. Scan external module for the specific functionality being added
+2. Document EVERY external failure in a traceability matrix
+3. For EACH exposed parameter that fails, set a secure default in wrapper
+4. Cross-reference to ensure NO external failures are missed
+5. Document unexposed parameters as limitations
+
+**Solution Implemented**:
+- **Traceability Matrix Required**: Every PR must include a table mapping external failures to wrapper fixes
+- **Cross-Reference Verification**: Must verify every exposed external failure has a corresponding wrapper fix
+- **Active Not Passive**: Don't just scan wrapper; actively trace external failures and address them
+- **Documentation**: Each external failure must have an action: Fixed/Documented/Ignored
+
+**Example Traceability Matrix**:
+```
+| Check ID | Check Name | Location | Exposed? | Action | Wrapper Fix |
+|----------|------------|----------|----------|--------|-------------|
+| CKV_AZURE_35 | Network deny | main.tf:50 | YES | Fixed | default_action = "Deny" line 25 |
+| CKV_AZURE_XX | Min TLS | main.tf:75 | YES | Fixed | minimum_tls_version = "TLS1_2" line 30 |
+| CKV_AZURE_YY | Example only | examples/ | N/A | Ignored | Example code |
+| CKV_AZURE_ZZ | Not exposed | internal | NO | Documented | README limitations |
+```
+
+**Prevention**:
+- **MUST** create traceability matrix for every module/submodule
+- **MUST** scan external module BEFORE implementing functionality
+- **MUST** address each exposed external failure with secure defaults
+- **MUST NOT** assume wrapper is secure just because Checkov passes
+- **MUST** cross-reference external failures to wrapper fixes
+
+**Key Insight**: "Wrapper passes Checkov" only means wrapper code is clean. It does NOT mean the wrapper addresses external security vulnerabilities. You must ACTIVELY trace and fix those.
+
+## Module Audit Completed (2026-02-05)
+
+A comprehensive audit of all existing modules was performed to ensure they are up to date with the latest best practices documented in the agent instructions and templates.
+
+### Modules Audited
+
+| Module | Version | Audit Status | Issues Found | PR Created |
+|--------|---------|--------------|--------------|------------|
+| terraform-azurerm-resource-group | v1.0.0 | ✅ PASS | Minor: older .checkov.yaml format (non-blocking) | N/A |
+| terraform-azurerm-storage-account | No releases | ❌ **CRITICAL** | **Missing release workflow**, invalid TFLint rule, old Checkov config | [PR #2](https://github.com/nathlan/terraform-azurerm-storage-account/pull/2) |
+| terraform-azurerm-landing-zone-vending | v1.0.0 | ⚠️ FAIL | Invalid TFLint rule, old Checkov config | [PR #2](https://github.com/nathlan/terraform-azurerm-landing-zone-vending/pull/2) |
+| terraform-azurerm-firewall | v0.1.2 | ✅ PASS | Already fixed in PR #3 (merged) | N/A |
+| terraform-azurerm-firewall-policy | v0.1.0 | ✅ PASS | All files present and correct | N/A |
+
+### Critical Findings
+
+**1. terraform-azurerm-storage-account - MISSING RELEASE WORKFLOW**
+- **Issue**: Module has NO releases despite being functionally complete
+- **Root Cause**: Missing `.github/workflows/release-on-merge.yml` file
+- **Impact**: Unable to version or reference specific releases
+- **Fix**: PR #2 adds release workflow (will create v0.1.0 on merge)
+- **Status**: PR created and ready for review
+
+**2. Invalid azurerm_resource_tag Rule in TFLint Configuration**
+- **Affected Modules**:
+  - ✅ terraform-azurerm-firewall (fixed in PR #3, released as v0.1.2)
+  - ⏳ terraform-azurerm-storage-account (fixing in PR #2)
+  - ⏳ terraform-azurerm-landing-zone-vending (fixing in PR #2)
+- **Issue**: `.tflint.hcl` contained `azurerm_resource_tag` rule that doesn't exist
+- **Impact**: TFLint validation failures
+- **Reference**: Documented in Lessons Learned section
+- **Status**: 1 fixed, 2 PRs pending
+
+**3. Checkov Configuration Inconsistency**
+- **Issue**: Some modules using `.yaml` extension, others `.yml`
+- **Issue**: Older verbose format vs newer simplified format
+- **Impact**: Configuration maintenance and consistency
+- **Status**: Standardizing to `.yml` with simplified template across all modules
+
+### Actions Taken
+
+**Pull Requests Created:**
+
+1. **terraform-azurerm-storage-account PR #2**: Add missing release workflow + update configs
+   - Adds `.github/workflows/release-on-merge.yml`
+   - Fixes `.tflint.hcl` (removes invalid rule)
+   - Updates `.checkov.yml` (simplified format, .yml extension)
+   - **Release**: Will create v0.1.0 on merge
+
+2. **terraform-azurerm-landing-zone-vending PR #2**: Update validation configs
+   - Fixes `.tflint.hcl` (removes invalid rule)
+   - Updates `.checkov.yml` (simplified format, .yml extension)
+   - **Release**: Will create v1.0.1 on merge
+
+### Validation Workflow Tested
+
+All modules were validated against the full workflow:
+1. ✅ `terraform init -backend=false`
+2. ✅ `terraform fmt -check -recursive`
+3. ✅ `terraform validate`
+4. ✅ `tflint --init`
+5. ✅ `tflint --recursive` (passes after TFLint fix)
+6. ✅ `checkov -d .terraform/modules/<module> --config-file .checkov.yml`
+7. ✅ `checkov -d . --config-file .checkov.yml --skip-path .terraform`
+8. ✅ `terraform-docs` (root and examples)
+
+### Recommendations
+
+1. **Merge Outstanding PRs** (Priority Order):
+   - terraform-azurerm-storage-account PR #2 (CRITICAL - enables releases)
+   - terraform-azurerm-landing-zone-vending PR #2 (fixes validation)
+
+2. **Post-Merge Verification**:
+   - Verify v0.1.0 release created for storage-account
+   - Verify v1.0.1 release created for landing-zone-vending
+   - Update MODULE_TRACKING.md with new release information
+
+3. **Future Module Creation**:
+   - Always verify `.github/workflows/release-on-merge.yml` is present
+   - Use updated templates (`.tflint.hcl.template`, `.checkov.yml.template`)
+   - Test full validation workflow before marking PR as ready
+
+### Module Status Summary
+
+After PRs merge, all modules will be:
+- ✅ Using consistent validation configurations
+- ✅ Following HashiCorp standard module structure
+- ✅ Properly versioned with automated releases
+- ✅ Documented with terraform-docs
+- ✅ Validated with TFLint, Checkov, and Terraform
+
+**Audit Status**: Complete ✅
+**Critical Issues**: 1 (will be resolved when PR #2 merges)
+**Total PRs Created**: 2
+**Modules Fully Compliant**: 3/5 (will be 5/5 after PRs merge)
+
+## Checkov "Scan External First, Fix in Wrapper" Analysis (2026-02-05)
+
+### Post-Merge Validation
+
+After merging PRs #2 for storage-account and landing-zone-vending, all modules were tested with the Checkov workflow to determine if scanning external AVM modules first and fixing issues in wrapper modules is effective.
+
+### Test Results
+
+**All PRs Merged Successfully:**
+- ✅ terraform-azurerm-storage-account PR #2 merged → v0.1.0 released
+- ✅ terraform-azurerm-landing-zone-vending PR #2 merged → v1.0.1 released
+
+**Checkov Workflow Test Results:**
+
+| Module | External Checks | External Failures | Wrapper Checks | Wrapper Failures |
+|--------|----------------|-------------------|----------------|------------------|
+| resource-group | N/A | 0 | N/A | 0 |
+| **storage-account** | 170 passed | **16 failed** | 2 passed | 0 |
+| **landing-zone-vending** | 273 passed | **48 failed** | 1 passed | 0 |
+| **firewall** | 20 passed | **1 failed** | 1 passed | 0 |
+
+**Total Security Checks**: 463 passed, 65 failed across all external AVM modules
+
+### Key Findings
+
+1. **✅ The Workflow WORKS**: Checkov successfully scans external AVM modules separately from wrapper code
+2. **⚠️ Most Failures Are in EXAMPLES**: Majority of AVM failures (80%+) are in example code, not production code
+3. **🔒 Limited Fixability**: Most security issues CANNOT be overridden in wrapper modules
+4. **📊 Wrapper Modules Clean**: All wrapper modules passed their own Checkov scans (0 failures)
+
+### Detailed Analysis
+
+#### Storage Account Module (16 external failures)
+- **Location**: Mostly in AVM example code (Key Vault configurations, test scenarios)
+- **Fixable in wrapper**: Partially - Some parameters like `public_network_access_enabled`, `default_action` for network rules CAN be set with secure defaults
+- **Cannot fix**: Example code issues, parameters not exposed by AVM
+
+#### Landing Zone Vending Module (48 external failures)
+- **Location**: Large complex module with extensive example configurations
+- **Fixable in wrapper**: Rarely - Most are deep in the module structure
+- **Cannot fix**: Majority of issues due to AVM internal design decisions
+
+#### Firewall Module (1 external failure)
+- **Issue**: `CKV_AZURE_216` - "Ensure DenyIntelMode is set to Deny"
+- **Fixable in wrapper**: ❌ NO - AVM module doesn't expose `threat_intel_mode` parameter
+- **Resolution**: Must be fixed upstream in AVM or module must be forked
+
+### Recommendations
+
+**Is the "Scan External First, Fix in Wrapper" workflow necessary?**
+
+**Answer**: ✅ **YES - REQUIRED for production modules**
+
+**CRITICAL CLARIFICATION**:
+When creating wrapper modules, **YOU MUST set secure defaults for any exposed parameters that fail Checkov**. The wrapper module MUST achieve **0 Checkov failures** for your code.
+
+**Value Proposition:**
+- **REQUIRED**: Wrapper modules must pass Checkov (0 failures)
+- **REQUIRED**: Set secure defaults for all exposed security parameters
+- **HIGH VALUE**: Understanding security posture of dependencies
+- **DOCUMENTATION**: Record limitations for parameters not exposed by AVM
+
+**Required Workflow:**
+
+```bash
+# Step 1: Scan external AVM to identify issues
+checkov -d .terraform/modules/<module_name> --config-file .checkov.yml
+
+# Step 2: Categorize failures and FIX what you can:
+#   - Example code only? → Ignore (not used in production)
+#   - Production code + NOT exposed? → Document as "Known AVM limitation"
+#   - Production code + IS exposed? → **MUST FIX in wrapper** (set secure default)
+
+# Step 3: Set secure defaults in wrapper for ALL exposed parameters
+# Examples of required fixes:
+#   - public_network_access_enabled = false
+#   - default_action = "Deny"
+#   - minimum_tls_version = "TLS1_2"
+#   - enable_https_traffic_only = true
+
+# Step 4: Verify wrapper achieves 0 failures (REQUIRED)
+checkov -d . --config-file .checkov.yml --skip-path .terraform
+# EXPECTED: Passed checks: N, Failed checks: 0
+
+# Step 5: Document unfixable issues in README
+```
+
+**Module Creation Requirements:**
+- ✅ **MUST**: Wrapper passes Checkov with 0 failures
+- ✅ **MUST**: Set secure defaults for ALL exposed security parameters that fail
+- ✅ **MUST**: Document in README any AVM limitations (parameters not exposed)
+- ✅ **MUST**: Review external failures and categorize each one
+- ⚠️ **ALLOWED**: Skip checks that are 100% confirmed false positives (with justification)
+- ❌ **NEVER**: Commit a module where wrapper has Checkov failures without fixing or documented skips
+
+**False Positive Handling:**
+If a Checkov check is a **confirmed false positive** (100% certain):
+1. Add skip to `.checkov.yml` skip-check list:
+   ```yaml
+   skip-check:
+     - CKV_TF_1      # Existing skip for registry modules
+     - CKV_AZURE_XX  # NEW: [Your justification here]
+   ```
+2. **MUST** document in PR description with detailed justification:
+   - What the check requires
+   - Why it doesn't apply to this module
+   - Evidence it's a false positive
+3. Example justification:
+   > "Skipping CKV_AZURE_XX: This check requires feature Y which Azure resource Z doesn't support. See Azure documentation: [link]. This is a known Checkov false positive for this resource type."
+4. Requires review and approval before merging
+5. **NEVER** skip checks just because they're inconvenient to fix
+
+**When to Use This Workflow:**
+- ✅ **ALWAYS** when creating/updating modules (required step)
+- ✅ Security audits and compliance reporting
+- ✅ Risk assessment before adopting AVM modules
+- ✅ Deciding whether AVM is suitable or needs forking
+
+**Acceptable vs Unacceptable Failures:**
+- ✅ **ACCEPTABLE**: External AVM failures (informational - shows what exists)
+- ✅ **ACCEPTABLE**: External failures in example code (not used in production)
+- ✅ **ACCEPTABLE**: External failures where parameter not exposed (document limitation)
+- ✅ **ACCEPTABLE**: Wrapper failures that are confirmed false positives (with documented skip)
+- ❌ **UNACCEPTABLE**: Wrapper module failures without fix or justified skip
+- ❌ **UNACCEPTABLE**: Ignoring exposed parameters that fail security checks
+- ❌ **UNACCEPTABLE**: Skipping checks without detailed justification
+
+### Conclusion
+
+The Checkov workflow **is REQUIRED for production modules**. Wrapper modules **MUST pass Checkov** (0 failures) by setting secure defaults for all exposed security parameters.
+
+**CRITICAL: Traceability Requirement**
+
+The wrapper passing Checkov is NOT sufficient proof of security. You MUST trace back every external failure and ensure it's addressed. When adding functionality (like submodules), you MUST:
+
+1. Scan external module for that specific functionality
+2. Document ALL failures in a traceability matrix
+3. Address EACH exposed failure with secure defaults
+4. Document unexposed failures in README
+5. Cross-reference to ensure NO failures are missed
+
+**Why This Matters**:
+The wrapper will always pass Checkov initially because it doesn't implement vulnerable features yet. Example: Adding a file services submodule to storage account - if you don't scan the external file services module and set secure defaults, you introduce vulnerabilities that Checkov won't catch until it's too late.
+
+**Corrected Understanding**:
+1. Scan external AVM modules - identifies what security issues exist
+2. **CREATE TRACEABILITY MATRIX** - document every single failure and its resolution
+3. Categorize each failure - determine what CAN be fixed
+4. **SET SECURE DEFAULTS** in wrapper for ALL exposed parameters that fail
+5. Verify wrapper passes (0 failures) - **REQUIRED before committing**
+6. **CROSS-REFERENCE** - ensure every exposed external failure has a wrapper fix
+7. Document limitations for unfixable issues (parameters not exposed)
+
+**Traceability Matrix Template**:
+```
+| Check ID | Check Name | Location | Exposed? | Action | Wrapper Fix |
+|----------|------------|----------|----------|--------|-------------|
+| CKV_XX   | ...        | ...      | YES/NO   | Fixed/Documented/Ignored | Line X in wrapper |
+```
+
+**Key Point**: External failures are informational. Wrapper failures are **blocking**. You MUST achieve 0 Checkov failures in wrapper code AND you MUST trace every external failure to ensure it's explicitly addressed. Wrapper passing alone without traceability is INSUFFICIENT.
+
+**Best Practice**: Scan external modules to understand risks, create traceability matrix, fix what you can, document what you cannot, cross-reference all fixes, and consider contributing fixes back to AVM upstream for critical issues.
