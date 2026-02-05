@@ -1,16 +1,15 @@
 # Checkov Configuration for Terraform Modules
-# Security and compliance scanning for Terraform plan files
-# Usage: checkov -f tfplan.json
+# Security and compliance scanning for Terraform code
+# Usage: CHECKOV_EXPERIMENTAL_TERRAFORM_MANAGED_MODULES=True checkov -d . --framework terraform
 
 # Output settings
 compact: true
 quiet: true
 output: cli
 
-# Scan both Terraform code and plan files
+# Scan Terraform code
 framework:
   - terraform
-  - terraform_plan
 
 # Skip checks with justification
 skip-check:

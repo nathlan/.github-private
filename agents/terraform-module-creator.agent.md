@@ -76,27 +76,9 @@ Fully autonomous cloud coding agent with privileged permissions to create repos,
 1. `terraform init -backend=false`
 2. `terraform fmt -check -recursive`
 3. `terraform validate`
-4. `tflint --init` (download azurerm plugin)
+4. `tflint --init`
 5. `tflint --recursive`
-6. Checkov (Terraform Plan scanning):
-   ```bash
-   # In examples/basic directory with provider.tf
-   cd examples/basic
-   terraform plan -out=tfplan.binary
-   terraform show -json tfplan.binary > tfplan.json
-   checkov -f tfplan.json
-   rm tfplan.binary tfplan.json  # Cleanup
-   cd ../..
-   ```
-   - Scans actual resources that would be created, including from external modules
-   - More comprehensive than directory scanning
-   - Requires `provider.tf` in examples directory with minimal config:
-     ```hcl
-     provider "azurerm" {
-       features {}
-       skip_provider_registration = true
-     }
-     ```
+6. `CHECKOV_EXPERIMENTAL_TERRAFORM_MANAGED_MODULES=True checkov -d . --framework terraform`
 7. `terraform-docs`:
    - Without submodules: `terraform-docs markdown table --config .terraform-docs.yml .`
    - With submodules: Use custom config with `recursive.enabled: true` and `recursive.path: modules`
@@ -117,11 +99,9 @@ Fully autonomous cloud coding agent with privileged permissions to create repos,
 ├── LICENSE, .gitignore
 ├── .tflint.hcl, .checkov.yml
 ├── .github/workflows/release-on-merge.yml
-├── examples/basic/{main.tf, provider.tf, README.md}
+├── examples/basic/{main.tf, README.md}
 └── tests/ (optional)
 ```
-
-**Note**: Examples must include `provider.tf` with minimal provider configuration for Terraform plan generation during Checkov scanning.
 
 **WITH submodules**:
 ```
@@ -131,11 +111,9 @@ Fully autonomous cloud coding agent with privileged permissions to create repos,
 ├── LICENSE, .gitignore, .tflint.hcl, .checkov.yml
 ├── .github/workflows/release-on-merge.yml
 ├── modules/{blob,file}/ (each with main.tf, variables.tf w/defaults, outputs.tf, versions.tf, README.md w/usage, examples/basic/)
-├── examples/basic/{main.tf, provider.tf, README.md}
+├── examples/basic/{main.tf, README.md}
 └── tests/ (optional)
 ```
-
-**Note**: Examples must include `provider.tf` with minimal provider configuration for Terraform plan generation during Checkov scanning.
 
 Each submodule README MUST include usage with double-slash: `source = "github.com/org/module//modules/blob"`
 
@@ -235,20 +213,10 @@ Workflow: Update docs, create tag (v1.2.3), changelog, GitHub release with notes
 3. `terraform validate`
 4. `tflint --init`
 5. `tflint --recursive`
-6. Checkov with Terraform Plan (run in examples/basic):
-   ```bash
-   cd examples/basic
-   terraform plan -out=tfplan.binary
-   terraform show -json tfplan.binary > tfplan.json
-   checkov -f tfplan.json
-   rm tfplan.binary tfplan.json
-   cd ../..
-   ```
+6. `CHECKOV_EXPERIMENTAL_TERRAFORM_MANAGED_MODULES=True checkov -d . --framework terraform`
 7. `terraform-docs` (root + examples)
 
 Fix critical/high issues before proceeding.
-
-**Note**: Examples must include `provider.tf` for Checkov plan scanning.
 
 **Security**: Pass Checkov (or document exceptions), secure defaults (encryption), Azure best practices, document security in README, no secrets.
 **Handling Failures**: Stop workflow, clear errors, remediation steps, auto-fix safe items, manual review for security/breaking.
@@ -275,13 +243,6 @@ cp .checkov.yml.template .checkov.yml
 cp .terraform-docs.yml .
 
 # 3. Generate files (versions.tf, main.tf, variables.tf, outputs.tf, README.md)
-# 3a. Create provider.tf in examples/basic for Checkov scanning
-cat > examples/basic/provider.tf << 'EOF'
-provider "azurerm" {
-  features {}
-  skip_provider_registration = true
-}
-EOF
 
 # 4-9. Validate
 cd /tmp/terraform-azurerm-example
@@ -290,12 +251,7 @@ terraform fmt -recursive
 terraform validate
 tflint --init
 tflint --recursive
-cd examples/basic
-terraform plan -out=tfplan.binary
-terraform show -json tfplan.binary > tfplan.json
-checkov -f tfplan.json
-rm tfplan.binary tfplan.json
-cd ../..
+CHECKOV_EXPERIMENTAL_TERRAFORM_MANAGED_MODULES=True checkov -d . --framework terraform
 terraform-docs markdown table --config .terraform-docs.yml .
 terraform-docs markdown table --output-file README.md --output-mode inject examples/basic
 

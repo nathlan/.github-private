@@ -189,29 +189,16 @@ checkov --config-file .checkov.yaml  # Ignores .terraform/ directory by default
 - Running `terraform init -backend=false` is still useful for: TFLint (downloads providers), terraform validate
 - Checkov scanning only wrapper code is appropriate for this use case
 
-**Updated Guidance**:
-- ✅ ADOPTED: Terraform Plan scanning for comprehensive security analysis
-- ✅ Scans actual resources that would be created, including from external modules
-- ✅ More realistic security assessment than directory scanning
-- ✅ Requires provider configuration with example/mock values for plan generation
+**Resolution (2026-02-05)**:
 
-**New Workflow (2026-02-05)**:
+Use environment variable to enable scanning of downloaded modules:
+
 ```bash
 terraform init -backend=false
-terraform plan -out=tfplan.binary  # Requires provider config with mock values
-terraform show -json tfplan.binary > tfplan.json
-checkov -f tfplan.json
-rm tfplan.binary tfplan.json  # Cleanup
+CHECKOV_EXPERIMENTAL_TERRAFORM_MANAGED_MODULES=True checkov -d . --framework terraform
 ```
-
-**Benefits**:
-- Scans the actual resources that Terraform would create
-- Includes resources from external modules (AVM)
-- Detects misconfigurations in resource definitions
-- More comprehensive than directory scanning
 
 **Configuration Updates**:
 - Renamed `.checkov.yaml` to `.checkov.yml` for consistency
 - Simplified `.checkov.yml` template (removed excessive comments)
 - Simplified `.tflint.hcl` template (cleaner, focused on essentials)
-- Added documentation links to both templates
