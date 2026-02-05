@@ -181,11 +181,50 @@ Include examples in root README via `content` per https://terraform-docs.io/how-
 4. **Draft PR**: ALWAYS `draft: true` initially (remote + `.github-private`)
    - Title describing change
    - Description: changes summary, AVM consumed, validation results, breaking changes
+   - **MUST include Checkov Traceability Matrix** (see below)
    - Link to issues
 5. **Mark ready**: `update_pull_request` with `draft: false` when complete
    - Remote: after all files pushed
    - `.github-private`: final step after linking
 6. Add labels (terraform, module, enhancement)
+
+**Required PR Checkov Traceability Matrix**:
+Every PR MUST include this section documenting how external failures were addressed:
+
+```markdown
+## Checkov Security Traceability
+
+### External AVM Module Scan Results
+- Total checks: XXX
+- Passed: YYY
+- Failed: ZZZ
+
+### Failure Traceability Matrix
+
+| Check ID | Check Name | Location | Exposed? | Action | Wrapper Fix/Documentation |
+|----------|------------|----------|----------|--------|---------------------------|
+| CKV_AZURE_35 | Network default deny | main.tf:50 | YES | Fixed | `default_action = "Deny"` in line 25 |
+| CKV_AZURE_XX | Min TLS version | main.tf:75 | YES | Fixed | `minimum_tls_version = "TLS1_2"` in line 30 |
+| CKV_AZURE_YY | Queue logging | examples/queue/main.tf | N/A | Ignored | Example code only |
+| CKV_AZURE_ZZ | HSM backed keys | main.tf:120 | NO | Documented | README section "Known Limitations" |
+| CKV_AZURE_AA | Public access | main.tf:45 | YES | Fixed | `public_network_access_enabled = false` in line 20 |
+
+### Wrapper Module Scan Results
+- Total checks: N
+- Passed: N
+- Failed: **0** ✅
+
+### Cross-Reference Verification
+- ✅ All exposed parameters with failures have secure defaults in wrapper
+- ✅ All unexposed parameters documented in README
+- ✅ All example-only failures noted and ignored
+- ✅ Any skipped checks justified below
+
+### False Positive Justifications
+[If any checks skipped in .checkov.yml, provide detailed justification here]
+```
+
+This matrix ensures every external failure is explicitly traced and addressed.
 
 ### 5. Hook Failure Handling
 1. Identify failure from error messages
@@ -222,42 +261,79 @@ Workflow: Update docs, create tag (v1.2.3), changelog, GitHub release with notes
 3. `terraform validate`
 4. `tflint --init`
 5. `tflint --recursive`
-6. **Checkov Security Workflow** (CRITICAL - scan external, fix in wrapper, verify):
+6. **Checkov Security Workflow** (CRITICAL - scan external, TRACE BACK failures, fix in wrapper, verify):
    ```bash
-   # STEP 1: Scan external AVM module to identify security issues
-   checkov -d .terraform/modules/<module_name> --config-file .checkov.yml
+   # STEP 1: Scan external AVM module to identify ALL security issues
+   checkov -d .terraform/modules/<module_name> --config-file .checkov.yml > external_failures.txt
 
-   # STEP 2: Analyze failures and categorize:
-   # - Example code only? → Ignore (not used in production)
-   # - Production code but parameter NOT exposed? → Document as limitation
-   # - Production code AND parameter IS exposed? → FIX in wrapper (see below)
+   # CRITICAL: Save and review EVERY failure found in external module
+   # You MUST trace each failure back to wrapper to ensure it's addressed
 
-   # STEP 3: Fix exposed security issues in wrapper by setting secure defaults
-   # For each failure where AVM exposes the parameter, set secure default in wrapper
+   # STEP 2: Create traceability matrix - for EACH external failure, document:
+   # Failure ID | Check Name | Location | Exposed? | Action Taken | Wrapper Fix
+   # CKV_AZURE_35 | Network deny | main.tf:50 | YES | Fixed | default_action = "Deny"
+   # CKV_AZURE_XX | TLS version | main.tf:75 | YES | Fixed | minimum_tls_version = "TLS1_2"
+   # CKV_AZURE_YY | Example only | examples/ | N/A | Ignored | N/A (example code)
+   # CKV_AZURE_ZZ | Not exposed | internal | NO | Documented | README limitation section
+
+   # STEP 3: Analyze EACH failure and categorize:
+   # - Example code only? → Document "Ignored - example code" in matrix
+   # - Production code but parameter NOT exposed? → Document as limitation + add to README
+   # - Production code AND parameter IS exposed? → **MUST FIX in wrapper** (see below)
+   # - False positive? → Skip with justification in .checkov.yml + PR description
+
+   # STEP 4: Fix exposed security issues in wrapper by setting secure defaults
+   # For EACH failure where AVM exposes the parameter, set secure default in wrapper
+   # Cross-reference with traceability matrix to ensure ALL are addressed
    # Examples:
-   #   - public_network_access_enabled = false (if AVM allows public access)
-   #   - default_action = "Deny" (for network rules)
-   #   - minimum_tls_version = "TLS1_2"
-   #   - threat_intelligence_mode = "Deny" (for firewall policies)
-   #   - enable_https_traffic_only = true
+   #   - public_network_access_enabled = false (fixes CKV_AZURE_35)
+   #   - default_action = "Deny" (fixes CKV_AZURE_XX)
+   #   - minimum_tls_version = "TLS1_2" (fixes CKV_AZURE_YY)
+   #   - threat_intelligence_mode = "Deny" (fixes CKV_AZURE_ZZ - firewall policies)
+   #   - enable_https_traffic_only = true (fixes CKV_AZURE_AA)
 
-   # STEP 4: Verify wrapper passes Checkov (should have 0 failures for YOUR code)
+   # STEP 5: Verify wrapper passes Checkov
    checkov -d . --config-file .checkov.yml --skip-path .terraform
 
+   # STEP 6: CRITICAL CROSS-REFERENCE CHECK
+   # Go through traceability matrix and verify EACH exposed failure has a corresponding
+   # wrapper fix. The wrapper passing is NOT sufficient - you must ensure every
+   # external failure that COULD affect wrapper has been explicitly addressed.
+
    # EXPECTED RESULT:
-   #   - External module: May have failures (AVM issues we can't control)
-   #   - Wrapper module: MUST PASS (0 failures) after setting secure defaults
+   #   - External module: May have failures (document ALL in matrix)
+   #   - Wrapper module: MUST PASS (0 failures)
+   #   - Traceability: EVERY exposed external failure addressed in wrapper
+   #   - Documentation: All non-exposed failures documented in README
    ```
 7. `terraform-docs` (root + examples)
 
-**CRITICAL EXPECTATION**: Wrapper modules MUST pass Checkov with 0 failures by setting secure defaults for all exposed security parameters. If AVM exposes a parameter that's failing security checks, YOU MUST override it with a secure default in the wrapper.
+**CRITICAL EXPECTATION**: Wrapper modules MUST pass Checkov with 0 failures AND every external security failure must be traced back and addressed. Wrapper passing alone is NOT sufficient - you must actively verify that each external failure has been handled.
+
+**DANGER**: The wrapper will always pass Checkov initially because it doesn't implement vulnerable features yet. When adding functionality (like submodules), you MUST:
+1. Scan the external module for that new functionality
+2. Document ALL security failures found
+3. Address EACH failure in the wrapper with secure defaults
+4. Cross-reference to ensure no failures are missed
+
+**Example**: Adding file services submodule to storage account:
+```
+1. Scan external: checkov finds 10 failures in file services
+2. Create matrix: Document all 10 failures with actions
+3. Fix in wrapper: Set secure defaults for all 7 exposed parameters
+4. Document: Add 3 unexposed limitations to README
+5. Verify: Wrapper passes AND all 10 failures have actions in matrix
+```
 
 **Security**:
 - **MUST**: Pass Checkov for wrapper code (0 failures expected)
 - **MUST**: Set secure defaults for ALL exposed AVM parameters that fail security checks
+- **MUST**: Create traceability matrix showing every external failure and its resolution
 - **MUST**: Document any unfixable AVM limitations (parameters not exposed)
+- **MUST**: Cross-reference external failures to wrapper fixes before completing
 - **SHOULD**: Encrypt by default, follow Azure security best practices
 - **MUST NOT**: Commit secrets or bypass security checks
+- **MUST NOT**: Assume wrapper is secure just because Checkov passes without tracing external failures
 
 **Checkov Failure Handling**:
 1. **External AVM failures**: Review each one

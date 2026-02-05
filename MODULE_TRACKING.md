@@ -411,6 +411,51 @@ checkov -d . --config-file .checkov.yml --skip-path .terraform
 
 **`.gitignore` Status**: Keep `.terraform/` in `.gitignore` - it's correct to not commit downloaded modules.
 
+### CRITICAL: Checkov Traceability Requirement (2026-02-05)
+
+**Issue**: Wrapper modules can pass Checkov with 0 failures while still introducing security vulnerabilities when adding functionality (like submodules), because the wrapper hasn't implemented those features yet.
+
+**Real-World Example**:
+When adding a file services submodule to the storage account module:
+1. Wrapper passes Checkov (0 failures) ✅
+2. But file services in external AVM has 10 security failures ⚠️
+3. If you don't scan external file services module and set secure defaults, you introduce vulnerabilities
+4. Checkov won't catch this until after the vulnerable code is implemented
+
+**Problem**: Previous instructions said "wrapper must pass Checkov" but didn't require TRACING BACK to external failures and ensuring each is addressed. This creates a false sense of security.
+
+**Critical Gap**: Just checking "wrapper passes" is insufficient. You must:
+1. Scan external module for the specific functionality being added
+2. Document EVERY external failure in a traceability matrix
+3. For EACH exposed parameter that fails, set a secure default in wrapper
+4. Cross-reference to ensure NO external failures are missed
+5. Document unexposed parameters as limitations
+
+**Solution Implemented**:
+- **Traceability Matrix Required**: Every PR must include a table mapping external failures to wrapper fixes
+- **Cross-Reference Verification**: Must verify every exposed external failure has a corresponding wrapper fix
+- **Active Not Passive**: Don't just scan wrapper; actively trace external failures and address them
+- **Documentation**: Each external failure must have an action: Fixed/Documented/Ignored
+
+**Example Traceability Matrix**:
+```
+| Check ID | Check Name | Location | Exposed? | Action | Wrapper Fix |
+|----------|------------|----------|----------|--------|-------------|
+| CKV_AZURE_35 | Network deny | main.tf:50 | YES | Fixed | default_action = "Deny" line 25 |
+| CKV_AZURE_XX | Min TLS | main.tf:75 | YES | Fixed | minimum_tls_version = "TLS1_2" line 30 |
+| CKV_AZURE_YY | Example only | examples/ | N/A | Ignored | Example code |
+| CKV_AZURE_ZZ | Not exposed | internal | NO | Documented | README limitations |
+```
+
+**Prevention**:
+- **MUST** create traceability matrix for every module/submodule
+- **MUST** scan external module BEFORE implementing functionality
+- **MUST** address each exposed external failure with secure defaults
+- **MUST NOT** assume wrapper is secure just because Checkov passes
+- **MUST** cross-reference external failures to wrapper fixes
+
+**Key Insight**: "Wrapper passes Checkov" only means wrapper code is clean. It does NOT mean the wrapper addresses external security vulnerabilities. You must ACTIVELY trace and fix those.
+
 ## Module Audit Completed (2026-02-05)
 
 A comprehensive audit of all existing modules was performed to ensure they are up to date with the latest best practices documented in the agent instructions and templates.
@@ -638,13 +683,35 @@ If a Checkov check is a **confirmed false positive** (100% certain):
 
 The Checkov workflow **is REQUIRED for production modules**. Wrapper modules **MUST pass Checkov** (0 failures) by setting secure defaults for all exposed security parameters.
 
+**CRITICAL: Traceability Requirement**
+
+The wrapper passing Checkov is NOT sufficient proof of security. You MUST trace back every external failure and ensure it's addressed. When adding functionality (like submodules), you MUST:
+
+1. Scan external module for that specific functionality
+2. Document ALL failures in a traceability matrix
+3. Address EACH exposed failure with secure defaults
+4. Document unexposed failures in README
+5. Cross-reference to ensure NO failures are missed
+
+**Why This Matters**:
+The wrapper will always pass Checkov initially because it doesn't implement vulnerable features yet. Example: Adding a file services submodule to storage account - if you don't scan the external file services module and set secure defaults, you introduce vulnerabilities that Checkov won't catch until it's too late.
+
 **Corrected Understanding**:
 1. Scan external AVM modules - identifies what security issues exist
-2. Categorize each failure - determine what CAN be fixed
-3. **SET SECURE DEFAULTS** in wrapper for ALL exposed parameters that fail
-4. Verify wrapper passes (0 failures) - **REQUIRED before committing**
-5. Document limitations for unfixable issues (parameters not exposed)
+2. **CREATE TRACEABILITY MATRIX** - document every single failure and its resolution
+3. Categorize each failure - determine what CAN be fixed
+4. **SET SECURE DEFAULTS** in wrapper for ALL exposed parameters that fail
+5. Verify wrapper passes (0 failures) - **REQUIRED before committing**
+6. **CROSS-REFERENCE** - ensure every exposed external failure has a wrapper fix
+7. Document limitations for unfixable issues (parameters not exposed)
 
-**Key Point**: External failures are informational. Wrapper failures are **blocking**. You MUST achieve 0 Checkov failures in wrapper code by setting appropriate secure defaults for all exposed parameters.
+**Traceability Matrix Template**:
+```
+| Check ID | Check Name | Location | Exposed? | Action | Wrapper Fix |
+|----------|------------|----------|----------|--------|-------------|
+| CKV_XX   | ...        | ...      | YES/NO   | Fixed/Documented/Ignored | Line X in wrapper |
+```
 
-**Best Practice**: Scan external modules to understand risks, fix what you can, document what you cannot, and consider contributing fixes back to AVM upstream for critical issues.
+**Key Point**: External failures are informational. Wrapper failures are **blocking**. You MUST achieve 0 Checkov failures in wrapper code AND you MUST trace every external failure to ensure it's explicitly addressed. Wrapper passing alone without traceability is INSUFFICIENT.
+
+**Best Practice**: Scan external modules to understand risks, create traceability matrix, fix what you can, document what you cannot, cross-reference all fixes, and consider contributing fixes back to AVM upstream for critical issues.
