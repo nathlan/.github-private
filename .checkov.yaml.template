@@ -33,7 +33,7 @@ skip-check:
 # soft-fail: false
 
 # Download external modules for scanning (recommended for thorough checks)
-# download-external-modules: true
+download-external-modules: true
 
 # External checks directory (for custom organizational policies)
 # external-checks-dir:
