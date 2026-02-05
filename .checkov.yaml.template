@@ -1,44 +1,51 @@
 # Checkov Configuration for Terraform Modules
 # This configuration defines security and compliance scanning behavior
+# Use with: checkov --config-file .checkov.yaml
 
-# Skip specific checks if needed (use sparingly and with justification)
-# Format: CKV_<provider>_<number>
-skip-check:
-  # Example: Skip check for public access if module explicitly allows it
-  # - CKV_AZURE_35  # Storage account allows public blob access
-  
-# Uncomment and configure as needed:
-  # - CKV_AZURE_1   # Skip specific security check with justification
-  
-# Set severity threshold (default is LOW)
-# Options: CRITICAL, HIGH, MEDIUM, LOW
-# Only fail on issues at or above this severity
+# Compact output for cleaner results
 compact: true
-quiet: false
 
-# Framework filters (enable only what you need)
+# Quiet mode - reduce verbosity
+quiet: true
+
+# Framework filters (only scan Terraform)
 framework:
   - terraform
   - terraform_plan
 
-# Output configuration
+# Output format
 output: cli
 
 # Directory to scan (default is current directory)
-# directory: .
+directory:
+  - .
 
-# Soft fail mode - don't fail the build, just report
+# Skip specific checks if needed (use sparingly and with justification)
+# Format: CKV_<provider>_<number>
+skip-check:
+  # Registry modules use version constraints, not commit hashes
+  - CKV_TF_1  # Ensure Terraform module sources use a commit hash
+  
+  # Add more skips as needed with justification:
+  # - CKV_AZURE_35  # Storage account allows public blob access (if explicitly required)
+
+# Soft fail mode - don't fail the build, just report (default: false)
 # soft-fail: false
 
-# External checks directory (for custom policies)
-# external-checks-dir: ./custom-policies
-
-# Download external modules for scanning
+# Download external modules for scanning (recommended for thorough checks)
 # download-external-modules: true
+
+# External checks directory (for custom organizational policies)
+# external-checks-dir:
+#   - ./custom-policies
 
 # Set baseline file to compare against
 # baseline: checkov_baseline.json
 
-# Custom policy configuration
-# Create organization-specific policies in ./custom-policies directory
-# See: https://www.checkov.io/3.Custom%20Policies/Custom%20Policies%20Overview.html
+# Additional configuration options:
+# - branch: develop  # Specify branch name
+# - repo-id: org/repo  # Repository identifier
+# - check: [CKV_AZURE_1]  # Only run specific checks
+# - skip-framework: [secrets]  # Skip specific frameworks
+
+# For more options, see: https://www.checkov.io/2.Basics/CLI%20Command%20Reference.html
