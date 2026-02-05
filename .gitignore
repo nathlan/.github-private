@@ -1,6 +1,10 @@
 *.tar.gz
 *.zip
 
+# Prevent terraform-docs archive contents from being committed
+/README.md
+/LICENSE
+
 # Terraform
 .terraform/
 .terraform.lock.hcl

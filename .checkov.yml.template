@@ -1,6 +1,6 @@
 # Checkov Configuration for Terraform Modules
 # Security and compliance scanning for Terraform code
-# Usage: CHECKOV_EXPERIMENTAL_TERRAFORM_MANAGED_MODULES=True checkov -d . --framework terraform
+# Usage: CHECKOV_EXPERIMENTAL_TERRAFORM_MANAGED_MODULES=True checkov -d . --config-file .checkov.yml
 
 # Output settings
 compact: true

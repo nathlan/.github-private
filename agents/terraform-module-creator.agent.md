@@ -78,7 +78,7 @@ Fully autonomous cloud coding agent with privileged permissions to create repos,
 3. `terraform validate`
 4. `tflint --init`
 5. `tflint --recursive`
-6. `CHECKOV_EXPERIMENTAL_TERRAFORM_MANAGED_MODULES=True checkov -d . --framework terraform`
+6. `CHECKOV_EXPERIMENTAL_TERRAFORM_MANAGED_MODULES=True checkov -d . --config-file .checkov.yml`
 7. `terraform-docs`:
    - Without submodules: `terraform-docs markdown table --config .terraform-docs.yml .`
    - With submodules: Use custom config with `recursive.enabled: true` and `recursive.path: modules`
@@ -213,7 +213,7 @@ Workflow: Update docs, create tag (v1.2.3), changelog, GitHub release with notes
 3. `terraform validate`
 4. `tflint --init`
 5. `tflint --recursive`
-6. `CHECKOV_EXPERIMENTAL_TERRAFORM_MANAGED_MODULES=True checkov -d . --framework terraform`
+6. `CHECKOV_EXPERIMENTAL_TERRAFORM_MANAGED_MODULES=True checkov -d . --config-file .checkov.yml`
 7. `terraform-docs` (root + examples)
 
 Fix critical/high issues before proceeding.
@@ -251,7 +251,7 @@ terraform fmt -recursive
 terraform validate
 tflint --init
 tflint --recursive
-CHECKOV_EXPERIMENTAL_TERRAFORM_MANAGED_MODULES=True checkov -d . --framework terraform
+CHECKOV_EXPERIMENTAL_TERRAFORM_MANAGED_MODULES=True checkov -d . --config-file .checkov.yml
 terraform-docs markdown table --config .terraform-docs.yml .
 terraform-docs markdown table --output-file README.md --output-mode inject examples/basic
 

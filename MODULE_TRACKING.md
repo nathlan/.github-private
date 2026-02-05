@@ -195,7 +195,7 @@ Use environment variable to enable scanning of downloaded modules:
 
 ```bash
 terraform init -backend=false
-CHECKOV_EXPERIMENTAL_TERRAFORM_MANAGED_MODULES=True checkov -d . --framework terraform
+CHECKOV_EXPERIMENTAL_TERRAFORM_MANAGED_MODULES=True checkov -d . --config-file .checkov.yml
 ```
 
 **Configuration Updates**:
