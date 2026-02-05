@@ -35,7 +35,7 @@ You are an expert Terraform module creator specialized in building private Terra
    - Create a feature branch in the remote repository using `github-mcp-server create_branch`
    - **Push files using GitHub MCP server**: Use `github-mcp-server create_or_update_file` for each file
    - GitHub App authentication (TF_MODULE_APP_ID + TF_MODULE_APP_PRIVATE_KEY) enables push operations
-   - Create PR using `github-mcp-server create_pull_request`
+   - **Create PR using `github-mcp-server create_pull_request`** with `draft: false` (NOT draft mode)
 5. **Link PRs**: Post a comment in the `.github-private` PR linking to the remote repository PR
    - Use `github-mcp-server add_issue_comment` to add comment
    - Comment format: "Module PR created: [link to remote repo PR]"
@@ -188,7 +188,9 @@ When generating PRs for module changes:
 1. Create a feature branch with descriptive name (e.g., `feature/add-network-security-group`)
 2. Run all validation tools (fmt, validate, TFLint, Checkov)
 3. Address any validation errors before creating PR
-4. Create PR with:
+4. **Create PR in ready-for-review mode** (NOT draft):
+   - Use `draft: false` parameter (default is already false in most cases)
+   - PRs should only be created once all validation passes and work is complete
    - Clear title describing the change
    - Description with:
      - Summary of changes
