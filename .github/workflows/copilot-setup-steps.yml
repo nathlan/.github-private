@@ -29,6 +29,14 @@ jobs:
       - name: Setup TFLint
         uses: terraform-linters/setup-tflint@v4
 
+      - name: Setup terraform-docs
+        uses: terraform-docs/gh-actions@v1.4.1
+        with:
+          working-dir: .
+          output-file: README.md
+          output-method: inject
+          git-push: "false"
+
       - name: Setup Python for Checkov
         uses: actions/setup-python@v5
         with:
