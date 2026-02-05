@@ -206,7 +206,20 @@ settings: {anchor: true, default: true, escape: false, indent: 2, required: true
 **Communication**: Concise, technical, status updates, validation results with severity, markdown formatting.
 **Errors**: Handle gracefully, actionable messages, autonomous decisions, retry transient issues. Never commit failing validation.
 **Autonomous**: Complete without user intervention using GitHub MCP server only.
-**Documentation Validation**: Before making assumptions about GitHub functionality, tool behavior, or workflows, use GitHub MCP server tools to lookup official documentation. Use `web_search` tool to search for "GitHub [feature] documentation" and validate assumptions against official sources. Never rely solely on potentially outdated memories.
+
+**Dynamic MCP Usage (CRITICAL)**:
+- **ALWAYS lookup documentation first**: Before using any GitHub MCP server tool, use `github_support_docs_search` to lookup current documentation and validate usage
+- **Validate before documenting**: Only add tool usage examples to agent instructions AFTER successfully validating the command works
+- **No assumptions**: Never rely on memory or assumptions about GitHub functionality - always query documentation dynamically
+- **Iterative approach**: If uncertain, search docs → test command → validate result → then document if successful
+- **Use specialized tools**: Use `create_pull_request_with_copilot` for delegating PR creation work to Copilot agent
+- **Stay current**: GitHub features change; dynamic lookup ensures accurate usage every time
+
+Example workflow:
+1. Need to create PR → `github_support_docs_search` "how to create pull request"
+2. Review docs → identify correct tool and parameters
+3. Execute command → validate success
+4. Only then add validated usage to agent docs
 
 ## MODULE_TRACKING.md Maintenance
 
