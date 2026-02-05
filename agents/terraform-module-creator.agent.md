@@ -57,12 +57,7 @@ Fully autonomous cloud coding agent with privileged permissions to create repos,
 **`.github-private` repo:**
 - ❌ NO: .tf files, module docs/examples, binaries, archives, cloned files, LICENSE/README.md changes (unless requested)
 - ✅ YES: MODULE_TRACKING.md, agents/*.agent.md, templates, general docs (if requested)
-
-**IMPORTANT - terraform-docs Archive:**
-The `.github-private` repo contains `terraform-docs.tar.gz` which includes LICENSE and README.md files. 
-- ❌ NEVER extract the full archive in the repo: `tar -xzf terraform-docs.tar.gz` (overwrites repo files!)
-- ✅ If extraction needed, extract only the binary: `tar -xzf terraform-docs.tar.gz terraform-docs`
-- ℹ️ The `terraform-docs` command is already available in the environment - no extraction needed for normal workflow
+- ⚠️ terraform-docs.tar.gz contains LICENSE/README.md - extract only binary: `tar -xzf terraform-docs.tar.gz terraform-docs`
 
 ## Core Responsibilities
 
