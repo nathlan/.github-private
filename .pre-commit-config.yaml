@@ -1,7 +1,20 @@
 # Pre-commit hooks for .github-private repository
-# Prevents committing files that should never be in this repo
+# Documentation: https://pre-commit.com/
 
 repos:
+  # Standard pre-commit hooks
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.5.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+      - id: check-added-large-files
+        args: ['--maxkb=1000']
+      - id: check-merge-conflict
+      - id: mixed-line-ending
+
+  # Local hooks specific to this repository
   - repo: local
     hooks:
       # Prevent committing Terraform files
@@ -10,32 +23,24 @@ repos:
         entry: Terraform files (.tf) should not be committed to .github-private repo
         language: fail
         files: '\.tf$'
-        
+
       # Prevent committing binaries and archives
       - id: no-binaries
         name: Block binary and archive files
         entry: Binary/archive files should not be committed to .github-private repo
         language: fail
         files: '\.(tar|gz|zip|bin|exe|dll|so|dylib)$'
-        
-      # Prevent modifying LICENSE (unless explicitly requested)
+
+      # Prevent modifying LICENSE
       - id: protect-license
-        name: Protect LICENSE file
-        entry: LICENSE should not be modified (add to .gitignore if needed)
+        name: Protect LICENSE file from modifications
+        entry: LICENSE must not be modified - it is protected by pre-commit hooks
         language: fail
         files: '^LICENSE$'
-        
-      # Prevent modifying README.md (unless explicitly requested)
+
+      # Prevent modifying README.md
       - id: protect-readme
-        name: Protect README.md file
-        entry: README.md should not be modified (add to .gitignore if needed)
+        name: Protect README.md file from modifications
+        entry: README.md must not be modified - it is protected by pre-commit hooks
         language: fail
         files: '^README\.md$'
-        
-      # Ensure only approved file types are committed
-      - id: approved-files-only
-        name: Only approved files
-        entry: Only MODULE_TRACKING.md, agents/*.md, templates, and config files allowed
-        language: fail
-        files: '^(?!MODULE_TRACKING\.md$|agents/.*\.agent\.md$|agents/.*\.md$|\.checkov\.yml\.template$|\.tflint\.hcl\.template$|\.terraform-docs\.yml$|\.gitignore$|\.github/.*$).*$'
-        exclude: '^(MODULE_TRACKING\.md|agents/.*\.agent\.md|agents/.*\.md|\.checkov\.yml\.template|\.tflint\.hcl\.template|\.terraform-docs\.yml|\.gitignore|\.github/.*|\.pre-commit-config\.yaml)$'

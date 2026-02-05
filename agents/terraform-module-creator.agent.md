@@ -82,10 +82,10 @@ Fully autonomous cloud coding agent with privileged permissions to create repos,
    ```bash
    # Step 1: Scan external AVM module first (identify security vulnerabilities)
    checkov -d .terraform/modules/<module_name> --config-file .checkov.yml
-   
+
    # Step 2: Fix security issues by setting secure defaults in wrapper module
    # Example: If CKV_AZURE_216 fails (DenyIntelMode), set threat_intel_mode = "Deny" in wrapper
-   
+
    # Step 3: Scan wrapper code to verify fixes
    checkov -d . --config-file .checkov.yml --skip-path .terraform
    ```
@@ -94,7 +94,7 @@ Fully autonomous cloud coding agent with privileged permissions to create repos,
    - Overriding insecure AVM defaults with secure values
    - Documenting security decisions in README.md
    - If unable to fix: Document as known limitation and provide mitigation guidance
-   
+
    Note: Checkov excludes `.terraform/` by default. Scanning separately ensures complete security coverage.
 7. `terraform-docs`:
    - Without submodules: `terraform-docs markdown table --config .terraform-docs.yml .`
@@ -228,7 +228,7 @@ Workflow: Update docs, create tag (v1.2.3), changelog, GitHub release with notes
 
 ## Validation & Security
 
-**Pre-commit**: 
+**Pre-commit**:
 1. `terraform init -backend=false`
 2. `terraform fmt -recursive`
 3. `terraform validate`
@@ -238,9 +238,9 @@ Workflow: Update docs, create tag (v1.2.3), changelog, GitHub release with notes
    ```bash
    # Scan external module to identify security issues
    checkov -d .terraform/modules/<module_name> --config-file .checkov.yml
-   
+
    # Fix issues by setting secure defaults in wrapper (e.g., threat_intel_mode = "Deny")
-   
+
    # Verify wrapper fixes the issues
    checkov -d . --config-file .checkov.yml --skip-path .terraform
    ```
