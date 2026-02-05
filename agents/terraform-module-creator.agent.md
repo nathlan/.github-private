@@ -60,9 +60,11 @@ You are an expert Terraform module creator specialized in building private Terra
 - Structure modules with proper inputs, outputs, and resource definitions
 - Use semantic versioning for module releases
 - **Use terraform-docs for documentation**: Generate README with `terraform-docs markdown table --output-file README.md --output-mode inject .`
+  - **Keep custom README content MINIMAL** (2-5 lines): Brief description, single usage example only
   - Place markers in README: `<!-- BEGIN_TF_DOCS -->` and `<!-- END_TF_DOCS -->`
-  - terraform-docs will auto-generate Requirements, Providers, Modules, Inputs, and Outputs tables
-  - Keep custom sections (Features, Usage, Examples) outside the markers
+  - terraform-docs will auto-generate ALL Requirements, Providers, Modules, Inputs, and Outputs tables
+  - **Trust terraform-docs to do the hard work** - avoid duplicating information it generates
+  - Custom content should ONLY include: module name, one-line description, basic usage example, link to submodules (if any)
 
 ### 2. Validation Requirements
 You MUST validate all modules using the following tools in this order:

@@ -2,10 +2,16 @@
 
 ## Module Files Location
 
-All module files with terraform-docs generated documentation are ready in:
+Module files with **succinct** READMEs and terraform-docs generated documentation are ready in:
 ```
 /home/runner/work/.github-private/.github-private/terraform-azurerm-storage-account/
 ```
+
+## Documentation Style
+
+✅ **Minimal custom content** (2-5 lines before terraform-docs markers)
+✅ **terraform-docs generated tables** (Requirements, Providers, Modules, Inputs, Outputs)
+✅ **No redundant information** - trust terraform-docs to do the work
 
 ## Files to Deploy
 
