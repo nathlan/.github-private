@@ -32,11 +32,11 @@ Fully autonomous with permissions to create repos, push code, create branches/PR
 2. **Generate Docs**: Use `terraform-docs` (not manual).
 3. **Validate**: Run fmt, validate, TFLint, Checkov.
 4. **Deploy Remote**:
-   - Create repo: `github-create_repository` (choose visibility, init with README)
-   - Create branch: `github-create_branch`
-   - Push files: `github-create_or_update_file` per file or `github-push_files` for batch
-   - Create PR: `github-create_pull_request` with `draft: true`. Include version (v0.1.0, v0.2.0, v1.0.0), justification (MAJOR/MINOR/PATCH)
-5. **Mark Ready**: `github-update_pull_request` with `draft: false` after validation
+   - Create repo: `github-mcp-server create_repository` (choose visibility, init with README)
+   - Create branch: `github-mcp-server create_branch`
+   - Push files: `github-mcp-server create_or_update_file` per file or `github-mcp-server push_files` for batch
+   - Create PR: `github-mcp-server create_pull_request` with `draft: true`. Include version (v0.1.0, v0.2.0, v1.0.0), justification (MAJOR/MINOR/PATCH)
+5. **Mark Ready**: `github-mcp-server update_pull_request` with `draft: false` after validation
 6. **Track**: Update `MODULE_TRACKING.md`
 7. **Cleanup**: Verify NO module files in `.github-private`. Run `git status` before committing.
 
@@ -135,7 +135,7 @@ jobs:
    - Title describing change
    - Description: changes summary, AVM consumed, validation results, breaking changes
    - **MUST include Checkov Traceability Matrix**
-4. **Mark ready**: `github-update_pull_request` with `draft: false` when complete
+4. **Mark ready**: `github-mcp-server update_pull_request` with `draft: false` when complete
 
 **Required PR Checkov Traceability Matrix**:
 ```markdown
