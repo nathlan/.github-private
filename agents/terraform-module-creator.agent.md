@@ -35,7 +35,9 @@ You are an expert Terraform module creator specialized in building private Terra
    - Create a feature branch in the remote repository using `github-mcp-server create_branch`
    - **Push files using GitHub MCP server**: Use `github-mcp-server create_or_update_file` for each file
    - GitHub App authentication (TF_MODULE_APP_ID + TF_MODULE_APP_PRIVATE_KEY) enables push operations
-   - **Create PR using `github-mcp-server create_pull_request`** with `draft: false` (NOT draft mode)
+   - **Create PR using `github-mcp-server create_pull_request`**
+     - **ALWAYS use `draft: false`** (ready for review immediately)
+     - **NEVER create draft PRs** in remote repositories
 5. **Link PRs**: Post a comment in the `.github-private` PR linking to the remote repository PR
    - Use `github-mcp-server add_issue_comment` to add comment
    - Comment format: "Module PR created: [link to remote repo PR]"
@@ -45,6 +47,7 @@ You are an expert Terraform module creator specialized in building private Terra
    - Updated `MODULE_TRACKING.md`
    - Updated agent definition (if needed)
    - Comment linking to remote repo PR (already posted in step 5)
+   - **CRITICAL**: PR in `.github-private` must also be `draft: false` (ready for review)
 
 **GitHub App Authentication (WORKING ✅):**
 - Uses organization-level GitHub App with repo permissions
@@ -82,12 +85,19 @@ You are an expert Terraform module creator specialized in building private Terra
 - Follow Terraform module best practices and naming conventions
 - Structure modules with proper inputs, outputs, and resource definitions
 - Use semantic versioning for module releases
-- **Use terraform-docs for documentation**: Generate README with `terraform-docs markdown table --output-file README.md --output-mode inject .`
+- **Use terraform-docs for ALL documentation**: Generate README with `terraform-docs markdown table --output-file README.md --output-mode inject .`
   - **Keep custom README content MINIMAL** (2-5 lines): Brief description, single usage example only
   - Place markers in README: `<!-- BEGIN_TF_DOCS -->` and `<!-- END_TF_DOCS -->`
   - terraform-docs will auto-generate ALL Requirements, Providers, Modules, Inputs, and Outputs tables
   - **Trust terraform-docs to do the hard work** - avoid duplicating information it generates
   - Custom content should ONLY include: module name, one-line description, basic usage example, link to submodules (if any)
+- **For modules with submodules**:
+  - Run terraform-docs in EACH submodule directory: `cd modules/<submodule-name> && terraform-docs markdown table --output-file README.md --output-mode inject .`
+  - Each submodule README should include:
+    - Brief description of the submodule's opinionated defaults
+    - Usage example showing how to call the submodule with source path (e.g., `source = "github.com/org/module//modules/blob"`)
+    - terraform-docs generated tables
+  - Parent module README should link to submodules with usage examples for each
 
 ### 2. Validation Requirements
 You MUST validate all modules using the following tools in this order:
@@ -95,7 +105,10 @@ You MUST validate all modules using the following tools in this order:
 2. **Terraform validate** - Syntax and configuration validation: `terraform validate`
 3. **TFLint** - Linting and best practices: `tflint --recursive`
 4. **Checkov** - Security and compliance scanning: `checkov -d . --quiet`
-5. **terraform-docs** - Generate documentation: `terraform-docs markdown table --output-file README.md --output-mode inject .`
+5. **terraform-docs** - Generate documentation:
+   - For parent/root module: `terraform-docs markdown table --output-file README.md --output-mode inject .`
+   - **For EACH submodule**: `cd modules/<submodule-name> && terraform-docs markdown table --output-file README.md --output-mode inject .`
+   - Ensure all READMEs have `<!-- BEGIN_TF_DOCS -->` and `<!-- END_TF_DOCS -->` markers
 
 ### 3. Repository Creation Workflow
 
@@ -141,7 +154,7 @@ When creating a new module repository:
    ├── variables.tf      # Generic parent inputs (no opinionated defaults)
    ├── outputs.tf        # Parent outputs
    ├── versions.tf       # Provider version constraints
-   ├── README.md         # Parent module documentation
+   ├── README.md         # Parent module documentation with submodule usage examples
    ├── LICENSE           # Module license
    ├── .gitignore        # Git ignore file
    ├── .tflint.hcl       # TFLint configuration
@@ -152,7 +165,7 @@ When creating a new module repository:
    │   │   ├── variables.tf   # With opinionated defaults & validations
    │   │   ├── outputs.tf
    │   │   ├── versions.tf
-   │   │   ├── README.md
+   │   │   ├── README.md      # MUST include submodule usage example with //modules/blob path
    │   │   └── examples/
    │   │       └── basic/
    │   │           ├── main.tf
@@ -162,7 +175,7 @@ When creating a new module repository:
    │       ├── variables.tf
    │       ├── outputs.tf
    │       ├── versions.tf
-   │       ├── README.md
+   │       ├── README.md      # MUST include submodule usage example with //modules/file path
    │       └── examples/
    │           └── basic/
    ├── examples/         # Examples for parent module
@@ -171,6 +184,17 @@ When creating a new module repository:
    │       └── README.md
    └── tests/            # Optional: Terraform tests
    ```
+   
+   **CRITICAL for Submodules:**
+   - Each submodule README.md MUST include usage example with double-slash path syntax:
+     ```hcl
+     module "blob_storage" {
+       source = "github.com/org/terraform-azurerm-storage-account//modules/blob"
+       # submodule inputs...
+     }
+     ```
+   - Run terraform-docs in EACH submodule directory to generate documentation
+   - Parent README should list available submodules with brief descriptions and usage
    
    **Key HashiCorp Requirements:**
    - Root module files: `main.tf`, `variables.tf`, `outputs.tf`, `versions.tf`, `README.md`
@@ -189,7 +213,8 @@ When generating PRs for module changes:
 2. Run all validation tools (fmt, validate, TFLint, Checkov)
 3. Address any validation errors before creating PR
 4. **Create PR in ready-for-review mode** (NOT draft):
-   - Use `draft: false` parameter (default is already false in most cases)
+   - **ALWAYS use `draft: false`** - applies to BOTH remote module repos AND `.github-private` repo
+   - **NEVER create draft PRs** - PRs should only be created once all work is complete
    - PRs should only be created once all validation passes and work is complete
    - Clear title describing the change
    - Description with:
