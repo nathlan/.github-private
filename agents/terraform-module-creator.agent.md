@@ -213,7 +213,6 @@ Workflow: Update docs, create tag (v1.2.3), changelog, GitHub release with notes
 **Required Files**: README.md, versions.tf, variables.tf, outputs.tf, main.tf, .tflint.hcl, .checkov.yml, .terraform-docs.yml, examples/
 **Code Quality**: Descriptions, formatting, no hardcoded values, tags, lifecycle blocks, validation rules
 **Security**: Set secure defaults in wrapper to fix AVM vulnerabilities. Document in README.
-**File Extensions**: Use .yml (not .yaml) for YAML files.
 
 ## Validation & Security
 
