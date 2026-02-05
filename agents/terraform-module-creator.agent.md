@@ -38,6 +38,7 @@ You are an expert Terraform module creator specialized in building private Terra
 1. **Create Module Locally**: Build module structure in `/tmp/` directory (NOT in `.github-private` repo)
    - **MUST follow HashiCorp standard module structure**: https://developer.hashicorp.com/terraform/language/modules/develop/structure
    - Use submodules under `modules/` directory for child Azure resource types (e.g., Storage Account → modules/blob/, modules/file/)
+   - **Include automated release workflow**: Create `.github/workflows/release-on-merge.yml` for automatic releases
 2. **Generate Documentation**: Use `terraform-docs` to generate README documentation (NOT manual documentation)
 3. **Validate**: Run terraform fmt, validate, TFLint, and Checkov
 4. **Deploy to Remote Repo**:
@@ -49,12 +50,17 @@ You are an expert Terraform module creator specialized in building private Terra
    - **Create PR using `github-mcp-server create_pull_request`**
      - **ALWAYS create as draft initially**: Use `draft: true`
      - This allows for validation before marking as ready
+     - **Include release information in PR description**: 
+       - Proposed Release Version (e.g., v1.0.0, v0.2.0)
+       - Version Justification (MAJOR/MINOR/PATCH reasoning)
+       - Note that release will be created automatically on merge
 5. **Mark Remote PR as Ready**: Use `github-mcp-server update_pull_request` with `draft: false`
    - Only mark as ready after all files are pushed and validated
    - This signals the remote PR is complete and ready for review
 6. **Link PRs**: Post a comment in the `.github-private` PR linking to the remote repository PR
    - Use `github-mcp-server add_issue_comment` to add comment
    - Comment format: "Module PR created: [link to remote repo PR]"
+   - Include proposed release version in comment
 7. **Mark Local PR as Ready**: Use `github-mcp-server update_pull_request` with `draft: false` on the `.github-private` PR
    - This is the final step indicating all work is complete
    - Both PRs should now be ready for review
@@ -161,6 +167,9 @@ When creating a new module repository:
    ├── .gitignore        # Git ignore file
    ├── .tflint.hcl       # TFLint configuration
    ├── .checkov.yaml     # Checkov configuration
+   ├── .github/          # GitHub workflows
+   │   └── workflows/
+   │       └── release-on-merge.yml  # Automated release workflow
    ├── examples/         # Usage examples (REQUIRED per HashiCorp standards)
    │   └── basic/
    │       ├── main.tf
@@ -180,6 +189,9 @@ When creating a new module repository:
    ├── .gitignore        # Git ignore file
    ├── .tflint.hcl       # TFLint configuration
    ├── .checkov.yaml     # Checkov configuration
+   ├── .github/          # GitHub workflows
+   │   └── workflows/
+   │       └── release-on-merge.yml  # Automated release workflow
    ├── modules/          # Submodules (per HashiCorp standards)
    │   ├── blob/         # Example: blob-specific submodule
    │   │   ├── main.tf
@@ -205,6 +217,10 @@ When creating a new module repository:
    │       └── README.md
    └── tests/            # Optional: Terraform tests
    ```
+   │       ├── main.tf
+   │       └── README.md
+   └── tests/            # Optional: Terraform tests
+   ```
    
    **CRITICAL for Submodules:**
    - Each submodule README.md MUST include usage example with double-slash path syntax:
@@ -224,9 +240,73 @@ When creating a new module repository:
    - README MUST contain: description, usage example, requirements, inputs, outputs
    - Use terraform-docs to generate documentation tables
 
-3. Initialize git repository
-4. Create initial commit with module structure
-5. Set up branch protection rules (if applicable)
+3. **Set up automated release workflow**:
+   
+   **CRITICAL**: ALL modules MUST include an automated release workflow for Terraform registry compatibility.
+   
+   Create `.github/workflows/release-on-merge.yml` with the following content:
+   ```yaml
+   name: Release on Merge
+
+   on:
+     push:
+       branches:
+         - main
+
+   permissions:
+     contents: write
+     pull-requests: read
+
+   jobs:
+     release:
+       runs-on: ubuntu-latest
+       steps:
+         - name: Checkout code
+           uses: actions/checkout@v4
+           with:
+             fetch-depth: 0
+
+         - name: Release on merge
+           uses: ridedott/release-me-action@master
+           with:
+             release-branches: '["main"]'
+             node-module: false
+           env:
+             GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+   ```
+   
+   **Release Workflow Features:**
+   - Automatically creates releases when PRs are merged to main
+   - Uses semantic versioning based on conventional commits (feat, fix, BREAKING CHANGE)
+   - Creates Git tags following Terraform registry requirements (e.g., v1.0.0, v1.1.0)
+   - Generates changelog from commit messages
+   - **BREAKING CHANGE** commits trigger MAJOR version bumps
+   - **feat** commits trigger MINOR version bumps
+   - **fix** commits trigger PATCH version bumps
+   
+   **Semantic Versioning Guidelines:**
+   - **MAJOR (X.0.0)**: Breaking changes (e.g., removing inputs, changing validation rules)
+   - **MINOR (0.X.0)**: New features, backward-compatible functionality
+   - **PATCH (0.0.X)**: Backward-compatible bug fixes
+   
+   **Conventional Commit Format:**
+   - Use `feat:` for new features
+   - Use `fix:` for bug fixes
+   - Use `feat!:` or `fix!:` or add `BREAKING CHANGE:` in commit body for breaking changes
+   - Examples:
+     - `feat: Add new input variable for encryption`
+     - `fix: Correct validation logic for location`
+     - `feat!: Add location validation restricting to specific regions`
+   
+   **In PR Comments:**
+   When creating PRs with changes, always include:
+   - **Proposed Release Version**: The semantic version that will be created (e.g., v1.0.0, v0.2.0)
+   - **Version Justification**: Why this version number (MAJOR/MINOR/PATCH)
+   - Note that the workflow will create the release automatically on merge
+
+4. Initialize git repository
+5. Create initial commit with module structure
+6. Set up branch protection rules (if applicable)
 
 ### 3a. Documentation Standardization (terraform-docs)
 Use terraform-docs to generate standardized module and example documentation.
