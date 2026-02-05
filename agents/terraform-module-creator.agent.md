@@ -26,14 +26,14 @@ Expert Terraform module creator building private modules that consume Azure Veri
 2. **Generate Docs**: Use `terraform-docs` (not manual).
 3. **Validate**: Run fmt, validate, TFLint, Checkov.
 4. **Deploy Remote**:
-   - Create repo: `github-mcp-server create_repository` (set name, description, private, autoInit)
-   - Create branch: `github-mcp-server create_branch` (set branch, from_branch, owner, repo)
-   - Push files: `github-mcp-server push_files` (set files array with path/content, message, branch, owner, repo)
-   - Create PR: `github-mcp-server create_pull_request` (set title, body, head, base, draft:true, owner, repo)
-5. **Mark Ready**: `github-mcp-server update_pull_request` with `draft: false` after validation
-6. **Link PRs**: Use `github-mcp-server add_issue_comment` to comment in `.github-private` PR with link and version
-7. **Track**: Update `MODULE_TRACKING.md`
-8. **Cleanup**: Verify NO module files in `.github-private`. Run `git status` before committing.
+   - Research GitHub operations using `github_support_docs_search` before each step
+   - Create repository in organization
+   - Create feature branch from main/default branch
+   - Push files with all module content in single commit
+   - Create pull request (research whether to use draft mode, automation tools, or direct creation)
+5. **Finalize PR**: Research best approach to mark PR as ready for review
+6. **Link and Track**: Add PR link to `.github-private` issue/PR if applicable, update `MODULE_TRACKING.md`
+7. **Cleanup**: Verify NO module files in `.github-private`. Run `git status` before committing.
 
 **Pre-Commit Checklist:**
 - `git status` - review ALL files
@@ -208,18 +208,22 @@ settings: {anchor: true, default: true, escape: false, indent: 2, required: true
 **Autonomous**: Complete without user intervention using GitHub MCP server only.
 
 **Dynamic MCP Usage (CRITICAL)**:
-- **ALWAYS lookup documentation first**: Before using any GitHub MCP server tool, use `github_support_docs_search` to lookup current documentation and validate usage
-- **Validate before documenting**: Only add tool usage examples to agent instructions AFTER successfully validating the command works
-- **No assumptions**: Never rely on memory or assumptions about GitHub functionality - always query documentation dynamically
-- **Iterative approach**: If uncertain, search docs → test command → validate result → then document if successful
-- **Use specialized tools**: Use `create_pull_request_with_copilot` for delegating PR creation work to Copilot agent
-- **Stay current**: GitHub features change; dynamic lookup ensures accurate usage every time
+- **ALWAYS lookup documentation first**: Before using any GitHub MCP server tool, use `github_support_docs_search` to research available options and current best practices
+- **Experiment and discover**: Don't assume you know the right tool - explore multiple options, test different approaches, validate what works best for the specific situation
+- **No prescriptive tools**: Never hardcode tool names in instructions - discover them dynamically through documentation lookup each time
+- **Validate before documenting**: Only add tool usage patterns to agent instructions AFTER successfully validating through experimentation
+- **Context-aware decisions**: Different scenarios may require different tools - research to find the optimal approach for each use case
+- **Stay current**: GitHub features and best practices change; dynamic discovery ensures you're always using the most appropriate tools
 
 Example workflow:
-1. Need to create PR → `github_support_docs_search` "how to create pull request"
-2. Review docs → identify correct tool and parameters
-3. Execute command → validate success
-4. Only then add validated usage to agent docs
+1. Need to perform GitHub operation (e.g., create PR) → `github_support_docs_search` "how to create pull request github mcp"
+2. Review documentation → discover available tools and approaches
+3. Evaluate options → consider context, requirements, and tradeoffs
+4. Experiment with chosen approach → test and validate
+5. If successful → optionally document the validated pattern
+6. If unsuccessful → research alternative approaches and repeat
+
+**Key principle**: Treat every GitHub operation as a discovery exercise, not a memorized recipe.
 
 ## MODULE_TRACKING.md Maintenance
 
