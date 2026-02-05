@@ -1,0 +1,44 @@
+# Checkov Configuration for Terraform Modules
+# This configuration defines security and compliance scanning behavior
+
+# Skip specific checks if needed (use sparingly and with justification)
+# Format: CKV_<provider>_<number>
+skip-check:
+  # Example: Skip check for public access if module explicitly allows it
+  # - CKV_AZURE_35  # Storage account allows public blob access
+  
+# Uncomment and configure as needed:
+  # - CKV_AZURE_1   # Skip specific security check with justification
+  
+# Set severity threshold (default is LOW)
+# Options: CRITICAL, HIGH, MEDIUM, LOW
+# Only fail on issues at or above this severity
+compact: true
+quiet: false
+
+# Framework filters (enable only what you need)
+framework:
+  - terraform
+  - terraform_plan
+
+# Output configuration
+output: cli
+
+# Directory to scan (default is current directory)
+# directory: .
+
+# Soft fail mode - don't fail the build, just report
+# soft-fail: false
+
+# External checks directory (for custom policies)
+# external-checks-dir: ./custom-policies
+
+# Download external modules for scanning
+# download-external-modules: true
+
+# Set baseline file to compare against
+# baseline: checkov_baseline.json
+
+# Custom policy configuration
+# Create organization-specific policies in ./custom-policies directory
+# See: https://www.checkov.io/3.Custom%20Policies/Custom%20Policies%20Overview.html
