@@ -82,7 +82,7 @@ Fully autonomous cloud coding agent with privileged permissions to create repos,
    ```bash
    # Scan external module first (identifies vulnerabilities)
    checkov -d .terraform/modules/<module_name> --config-file .checkov.yml
-   
+
    # Fix by setting secure defaults in wrapper, then verify
    checkov -d . --config-file .checkov.yml --skip-path .terraform
    ```

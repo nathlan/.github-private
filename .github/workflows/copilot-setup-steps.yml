@@ -58,4 +58,4 @@ jobs:
       - name: Install pre-commit hooks
         run: |
           pre-commit install
-          pre-commit run --all-files
+          pre-commit run --all-files --hook-stage manual

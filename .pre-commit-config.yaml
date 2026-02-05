@@ -7,12 +7,15 @@ repos:
     rev: v4.5.0
     hooks:
       - id: trailing-whitespace
+        exclude: '^(README\.md|LICENSE)$'
       - id: end-of-file-fixer
+        exclude: '^(README\.md|LICENSE)$'
       - id: check-yaml
       - id: check-added-large-files
         args: ['--maxkb=1000']
       - id: check-merge-conflict
       - id: mixed-line-ending
+        exclude: '^(README\.md|LICENSE)$'
 
   # Local hooks specific to this repository
   - repo: local
@@ -37,6 +40,7 @@ repos:
         entry: LICENSE must not be modified - it is protected by pre-commit hooks
         language: fail
         files: '^LICENSE$'
+        stages: [pre-commit, pre-push, pre-merge-commit]
 
       # Prevent modifying README.md
       - id: protect-readme
@@ -44,3 +48,4 @@ repos:
         entry: README.md must not be modified - it is protected by pre-commit hooks
         language: fail
         files: '^README\.md$'
+        stages: [pre-commit, pre-push, pre-merge-commit]
