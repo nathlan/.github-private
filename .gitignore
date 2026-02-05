@@ -7,3 +7,8 @@
 *.tfstate
 *.tfstate.*
 *.tfvars
+*.tf
+
+# Protect from accidental modification
+LICENSE
+README.md

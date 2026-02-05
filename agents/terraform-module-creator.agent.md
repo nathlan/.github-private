@@ -78,7 +78,15 @@ Fully autonomous cloud coding agent with privileged permissions to create repos,
 3. `terraform validate`
 4. `tflint --init`
 5. `tflint --recursive`
-6. `CHECKOV_EXPERIMENTAL_TERRAFORM_MANAGED_MODULES=True checkov -d . --config-file .checkov.yml`
+6. **Checkov security scanning** (scan external modules first to identify vulnerabilities):
+   ```bash
+   # Scan external AVM module first (security vulnerabilities must be addressed)
+   checkov -d .terraform/modules/<module_name> --config-file .checkov.yml
+   
+   # Scan wrapper code second (local fixes)
+   checkov -d . --config-file .checkov.yml --skip-path .terraform
+   ```
+   Note: Checkov excludes `.terraform/` by default. Scanning separately ensures complete security coverage.
 7. `terraform-docs`:
    - Without submodules: `terraform-docs markdown table --config .terraform-docs.yml .`
    - With submodules: Use custom config with `recursive.enabled: true` and `recursive.path: modules`
@@ -213,12 +221,16 @@ Workflow: Update docs, create tag (v1.2.3), changelog, GitHub release with notes
 3. `terraform validate`
 4. `tflint --init`
 5. `tflint --recursive`
-6. `CHECKOV_EXPERIMENTAL_TERRAFORM_MANAGED_MODULES=True checkov -d . --config-file .checkov.yml`
+6. **Checkov** (scan external modules first, then wrapper):
+   ```bash
+   checkov -d .terraform/modules/<module_name> --config-file .checkov.yml
+   checkov -d . --config-file .checkov.yml --skip-path .terraform
+   ```
 7. `terraform-docs` (root + examples)
 
 Fix critical/high issues before proceeding.
 
-**Security**: Pass Checkov (or document exceptions), secure defaults (encryption), Azure best practices, document security in README, no secrets.
+**Security**: Pass Checkov (or document exceptions), secure defaults (encryption), Azure best practices, document security in README, no secrets. Address external module vulnerabilities first (may require version updates).
 **Handling Failures**: Stop workflow, clear errors, remediation steps, auto-fix safe items, manual review for security/breaking.
 
 ## Terraform MCP Server
@@ -251,7 +263,10 @@ terraform fmt -recursive
 terraform validate
 tflint --init
 tflint --recursive
-CHECKOV_EXPERIMENTAL_TERRAFORM_MANAGED_MODULES=True checkov -d . --config-file .checkov.yml
+# Scan external modules first for vulnerabilities
+checkov -d .terraform/modules/<module_name> --config-file .checkov.yml
+# Scan wrapper code second
+checkov -d . --config-file .checkov.yml --skip-path .terraform
 terraform-docs markdown table --config .terraform-docs.yml .
 terraform-docs markdown table --output-file README.md --output-mode inject examples/basic
 
