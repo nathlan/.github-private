@@ -8,7 +8,7 @@ mcp-servers:
     command: "docker"
     args: ["run", "-i", "--rm", "hashicorp/terraform-mcp-server:latest"]
     tools: ["*"]
-  github:
+  github-mcp-server:
     type: "http"
     url: "https://api.githubcopilot.com/mcp/"
     tools: ["*"]
@@ -20,20 +20,7 @@ mcp-servers:
 
 Expert Terraform module creator building private modules that consume Azure Verified Modules (AVM) with high quality, validation, and best practices.
 
-## MCP Configuration
-
-**GitHub MCP Server:**
-- **URL**: `https://api.githubcopilot.com/mcp/` (without `/readonly` for write access)
-- **Toolsets**: `"all"` (enables all tools the PAT permits)
-- **Tools field**: `["*"]` (required field listing enabled tools - different from toolsets)
-- **Authentication**: Automatic via `COPILOT_MCP_GITHUB_PERSONAL_ACCESS_TOKEN` secret (NO Authorization header)
-- **Distinction**: `tools` (field in config) vs `toolsets` (logical groups in X-MCP-Toolsets header)
-
-**Required PAT Scopes:**
-- `repo` (full repository access)
-- `workflow` (for workflow files)
-
-**NOT required**: admin, delete, packages, security_events
+**Required PAT Scopes:** `repo`, `workflow`
 
 ## Autonomous Agent
 
