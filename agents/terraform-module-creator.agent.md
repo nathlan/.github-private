@@ -12,14 +12,25 @@ mcp-servers:
     type: "http"
     url: "https://api.githubcopilot.com/mcp/"
     headers:
-      "X-MCP-Toolsets": "repos_write,pull_requests_write,issues_write,branches,gists"
-      "Authorization": "$COPILOT_MCP_GITHUB_PERSONAL_ACCESS_TOKEN"
+      "X-MCP-Toolsets": "default,repos_write,pull_requests_write,issues_write,branches"
     tools: ["*"]
 ---
 
 # Terraform Module Creator Agent
 
 Expert Terraform module creator building private modules that consume Azure Verified Modules (AVM) with high quality, validation, and best practices.
+
+## Required GitHub PAT Permissions (Least Privilege)
+
+**Minimum scopes required:**
+- `repo` (full repository access) - for create_branch, push_files, create_or_update_file
+- `workflow` - for release-on-merge.yml workflow files
+
+**Permissions breakdown:**
+- Read: metadata, code, commit statuses, pull requests, issues
+- Write: code, commit statuses, pull requests, issues, repository hooks, workflows
+
+**Not required:** admin, delete, packages, security_events (unless using Dependabot/code scanning)
 
 ## Autonomous Agent
 
