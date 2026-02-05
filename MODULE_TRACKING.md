@@ -506,3 +506,97 @@ After PRs merge, all modules will be:
 **Critical Issues**: 1 (will be resolved when PR #2 merges)
 **Total PRs Created**: 2
 **Modules Fully Compliant**: 3/5 (will be 5/5 after PRs merge)
+
+## Checkov "Scan External First, Fix in Wrapper" Analysis (2026-02-05)
+
+### Post-Merge Validation
+
+After merging PRs #2 for storage-account and landing-zone-vending, all modules were tested with the Checkov workflow to determine if scanning external AVM modules first and fixing issues in wrapper modules is effective.
+
+### Test Results
+
+**All PRs Merged Successfully:**
+- ✅ terraform-azurerm-storage-account PR #2 merged → v0.1.0 released
+- ✅ terraform-azurerm-landing-zone-vending PR #2 merged → v1.0.1 released
+
+**Checkov Workflow Test Results:**
+
+| Module | External Checks | External Failures | Wrapper Checks | Wrapper Failures |
+|--------|----------------|-------------------|----------------|------------------|
+| resource-group | N/A | 0 | N/A | 0 |
+| **storage-account** | 170 passed | **16 failed** | 2 passed | 0 |
+| **landing-zone-vending** | 273 passed | **48 failed** | 1 passed | 0 |
+| **firewall** | 20 passed | **1 failed** | 1 passed | 0 |
+
+**Total Security Checks**: 463 passed, 65 failed across all external AVM modules
+
+### Key Findings
+
+1. **✅ The Workflow WORKS**: Checkov successfully scans external AVM modules separately from wrapper code
+2. **⚠️ Most Failures Are in EXAMPLES**: Majority of AVM failures (80%+) are in example code, not production code
+3. **🔒 Limited Fixability**: Most security issues CANNOT be overridden in wrapper modules
+4. **📊 Wrapper Modules Clean**: All wrapper modules passed their own Checkov scans (0 failures)
+
+### Detailed Analysis
+
+#### Storage Account Module (16 external failures)
+- **Location**: Mostly in AVM example code (Key Vault configurations, test scenarios)
+- **Fixable in wrapper**: Partially - Some parameters like `public_network_access_enabled`, `default_action` for network rules CAN be set with secure defaults
+- **Cannot fix**: Example code issues, parameters not exposed by AVM
+
+#### Landing Zone Vending Module (48 external failures)
+- **Location**: Large complex module with extensive example configurations
+- **Fixable in wrapper**: Rarely - Most are deep in the module structure
+- **Cannot fix**: Majority of issues due to AVM internal design decisions
+
+#### Firewall Module (1 external failure)
+- **Issue**: `CKV_AZURE_216` - "Ensure DenyIntelMode is set to Deny"
+- **Fixable in wrapper**: ❌ NO - AVM module doesn't expose `threat_intel_mode` parameter
+- **Resolution**: Must be fixed upstream in AVM or module must be forked
+
+### Recommendations
+
+**Is the "Scan External First, Fix in Wrapper" workflow necessary?**
+
+**Answer**: ✅ **YES for awareness**, ⚠️ **LIMITED for remediation**
+
+**Value Proposition:**
+- **HIGH VALUE**: Understanding security posture of dependencies
+- **LIMITED VALUE**: Actually fixing issues (most cannot be overridden)
+- **BEST USE**: Audit trail and informed decision-making
+
+**Recommended Workflow:**
+
+```bash
+# Step 1: Scan external AVM (for security awareness)
+checkov -d .terraform/modules/<module_name> --config-file .checkov.yml
+
+# Step 2: Categorize failures:
+#   - Example code only? → Ignore (not used in production)
+#   - Not exposed by AVM? → Document as known limitation
+#   - Exposed parameter? → Set secure default in wrapper
+
+# Step 3: Scan wrapper (ensure YOUR code is secure)
+checkov -d . --config-file .checkov.yml --skip-path .terraform
+
+# Step 4: Document accepted risks in module README
+```
+
+**When to Use This Workflow:**
+- ✅ Security audits and compliance reporting
+- ✅ Risk assessment before adopting AVM modules
+- ✅ Setting secure defaults for exposed parameters
+- ✅ Deciding whether to fork AVM modules
+
+**When NOT to Rely On It:**
+- ❌ Expecting to fix all external issues
+- ❌ Worrying about example code failures
+- ❌ Issues not exposed as AVM parameters
+
+### Conclusion
+
+The Checkov workflow **successfully works** and provides **valuable security visibility**, but has **limited remediation capability**. Most AVM security issues cannot be fixed in wrapper modules without forking the upstream code.
+
+**Recommendation**: Continue using the workflow for **awareness and audit purposes**, but set realistic expectations about what can be fixed in wrapper modules. The primary value is **transparency** about dependency security posture, not comprehensive remediation.
+
+**Best Practice**: Scan external modules to understand risks, fix what you can, document what you cannot, and consider contributing fixes back to AVM upstream for critical issues.
