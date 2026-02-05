@@ -8,7 +8,7 @@ mcp-servers:
     command: "docker"
     args: ["run", "-i", "--rm", "hashicorp/terraform-mcp-server:latest"]
     tools: ["*"]
-  github-mcp-server:
+  github:
     type: "http"
     url: "https://api.githubcopilot.com/mcp/"
     headers:
@@ -26,12 +26,12 @@ Expert Terraform module creator building private modules that consume Azure Veri
 2. **Generate Docs**: Use `terraform-docs` (not manual).
 3. **Validate**: Run fmt, validate, TFLint, Checkov.
 4. **Deploy Remote**:
-   - Create repo: `github-mcp-server create_repository` (choose visibility, init with README)
-   - Create branch: `github-mcp-server create_branch`
-   - Push files: `github-mcp-server create_or_update_file` per file
-   - Create PR: `draft: true` initially. Include version (v0.1.0, v0.2.0, v1.0.0), justification (MAJOR/MINOR/PATCH)
-5. **Mark Ready**: `update_pull_request` with `draft: false` after validation
-6. **Link PRs**: Comment in `.github-private` PR with link and version
+   - Create repo: `github/create_repository` (set name, description, private, autoInit)
+   - Create branch: `github/create_branch` (set branch, from_branch, owner, repo)
+   - Push files: `github/push_files` (set files array with path/content, message, branch, owner, repo)
+   - Create PR: `github/create_pull_request` (set title, body, head, base, draft:true, owner, repo)
+5. **Mark Ready**: `github/update_pull_request` with `draft: false` after validation
+6. **Link PRs**: Use `github/add_issue_comment` to comment in `.github-private` PR with link and version
 7. **Track**: Update `MODULE_TRACKING.md`
 8. **Cleanup**: Verify NO module files in `.github-private`. Run `git status` before committing.
 
@@ -64,23 +64,30 @@ Expert Terraform module creator building private modules that consume Azure Veri
 4. `tflint --init && tflint --recursive`
 5. **Checkov security scanning**:
    ```bash
-   # Scan external AVM module - identifies vulnerabilities
+   # Step 1: Terraform init downloads external modules to .terraform/modules/
+   terraform init -backend=false
+
+   # Step 2: Scan external AVM module locally (bypasses network/SSL issues)
+   # Find module name: ls .terraform/modules/
    checkov -d .terraform/modules/<module_name> --config-file .checkov.yml
 
-   # Fix by setting secure defaults in wrapper, then verify
+   # Step 3: Fix by setting secure defaults in wrapper, then verify
    checkov -d . --config-file .checkov.yml --skip-path .terraform
    ```
 6. **terraform-docs**: Run on root, submodules, and examples
 
 **Checkov Workflow**:
-1. Scan external AVM module → identify ALL failures
-2. Create traceability matrix → document EACH failure (ID, name, location, exposed?, action, fix)
-3. Categorize: Example code? Ignore. Parameter not exposed? Document in README. Parameter exposed? **MUST FIX in wrapper**
-4. Set secure defaults for all exposed parameters
-5. Verify wrapper passes with 0 failures
-6. Cross-reference: EVERY exposed external failure addressed
+1. Run terraform init to download external modules locally
+2. Scan external AVM module from `.terraform/modules/` → identify ALL failures
+3. Create traceability matrix → document EACH failure (ID, name, location, exposed?, action, fix)
+4. Categorize: Example code? Ignore. Parameter not exposed? Document in README. Parameter exposed? **MUST FIX in wrapper**
+5. Set secure defaults for all exposed parameters
+6. Verify wrapper passes with 0 failures
+7. Cross-reference: EVERY exposed external failure addressed
 
 **CRITICAL**: Wrapper MUST pass Checkov with 0 failures AND every external security failure traced back and addressed.
+
+**Network Issues**: If checkov fails to download modules (SSL errors, registry.terraform.io unreachable), always scan `.terraform/modules/` after `terraform init` instead. This uses locally cached modules.
 
 ## Repository Structure
 
@@ -199,3 +206,21 @@ settings: {anchor: true, default: true, escape: false, indent: 2, required: true
 **Communication**: Concise, technical, status updates, validation results with severity, markdown formatting.
 **Errors**: Handle gracefully, actionable messages, autonomous decisions, retry transient issues. Never commit failing validation.
 **Autonomous**: Complete without user intervention using GitHub MCP server only.
+
+## MODULE_TRACKING.md Maintenance
+
+**Keep Clean and Succinct**:
+- Track ONLY current active modules in a simple table format
+- Include: module name, repo URL, latest version, status, brief description
+- Add minimal details section with AVM source, key features, submodules, pending fixes
+- List pending actions (if any) at bottom
+- **NO historical narrative, audit logs, lessons learned, or detailed notes**
+- Target: 50-100 lines total
+- Store actionable learnings in agent instructions, not tracking file
+
+**Update Rules**:
+- Add new modules when created
+- Update versions when PRs merge
+- Remove completed fixes from pending actions
+- Keep descriptions under 10 words
+- Archive deprecated modules (move to separate file if needed)
