@@ -1,2 +1,9 @@
 *.tar.gz
 *.zip
+
+# Terraform
+.terraform/
+.terraform.lock.hcl
+*.tfstate
+*.tfstate.*
+*.tfvars

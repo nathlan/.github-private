@@ -73,11 +73,13 @@ Fully autonomous cloud coding agent with privileged permissions to create repos,
 - **For submodules**: Run terraform-docs in EACH submodule dir. Include usage example with source path (e.g., `source = "github.com/org/module//modules/blob"`). Parent README lists submodules with usage.
 
 ### 2. Validation (MUST run in order)
-1. `terraform fmt -check -recursive`
-2. `terraform validate`
-3. `tflint --recursive`
-4. `checkov --config-file .checkov.yaml` (config has `download-external-modules: true` for AVM scanning)
-5. `terraform-docs`:
+1. `terraform init -backend=false` (download external modules for Checkov scanning)
+2. `terraform fmt -check -recursive`
+3. `terraform validate`
+4. `tflint --init` (download azurerm plugin)
+5. `tflint --recursive`
+6. `checkov --config-file .checkov.yaml` (scans modules in .terraform/ from init)
+7. `terraform-docs`:
    - Without submodules: `terraform-docs markdown table --config .terraform-docs.yml .`
    - With submodules: Use custom config with `recursive.enabled: true` and `recursive.path: modules`
    - Examples: `terraform-docs markdown table --output-file README.md --output-mode inject examples/basic`
@@ -205,7 +207,7 @@ Workflow: Update docs, create tag (v1.2.3), changelog, GitHub release with notes
 
 ## Validation & Security
 
-**Pre-commit**: 1) fmt -recursive 2) validate 3) tflint --recursive 4) checkov --config-file .checkov.yaml (with download-external-modules) 5) terraform-docs 6) terraform-docs examples. Fix critical/high issues.
+**Pre-commit**: 1) terraform init -backend=false 2) fmt -recursive 3) validate 4) tflint --init 5) tflint --recursive 6) checkov --config-file .checkov.yaml 7) terraform-docs 8) terraform-docs examples. Fix critical/high issues.
 **Security**: Pass Checkov (or document exceptions), secure defaults (encryption), Azure best practices, document security in README, no secrets.
 **Handling Failures**: Stop workflow, clear errors, remediation steps, auto-fix safe items, manual review for security/breaking.
 
@@ -237,6 +239,7 @@ cd /tmp/terraform-azurerm-example
 terraform init -backend=false
 terraform fmt -recursive
 terraform validate
+tflint --init
 tflint --recursive
 checkov --config-file .checkov.yaml
 terraform-docs markdown table --config .terraform-docs.yml .

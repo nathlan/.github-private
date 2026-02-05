@@ -32,8 +32,9 @@ skip-check:
 # Soft fail mode - don't fail the build, just report (default: false)
 # soft-fail: false
 
-# Download external modules for scanning (recommended for thorough checks)
-download-external-modules: true
+# Download external modules for scanning
+# NOTE: Use 'terraform init' before running checkov to download modules
+# download-external-modules: true  # Removed - causes SSL cert issues with registry.terraform.io
 
 # External checks directory (for custom organizational policies)
 # external-checks-dir:
