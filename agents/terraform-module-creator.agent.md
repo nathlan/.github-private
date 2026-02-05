@@ -8,11 +8,12 @@ mcp-servers:
     command: "docker"
     args: ["run", "-i", "--rm", "hashicorp/terraform-mcp-server:latest"]
     tools: ["*"]
-  github-mcp-server:
+  github:
     type: "http"
     url: "https://api.githubcopilot.com/mcp/"
     headers:
       "X-MCP-Toolsets": "all"
+      "Authorization": "$COPILOT_MCP_GITHUB_PERSONAL_ACCESS_TOKEN"
     tools: ["*"]
 ---
 
@@ -29,12 +30,12 @@ Fully autonomous cloud coding agent with privileged permissions to create repos,
 1. **Create Locally in `/tmp/`**: CRITICAL - ALL work in `/tmp/<module-name>/`, NEVER in `.github-private` repo. Follow HashiCorp structure: https://developer.hashicorp.com/terraform/language/modules/develop/structure. Use `modules/` for child resource types. Include `.github/workflows/release-on-merge.yml`.
 2. **Generate Docs**: Use `terraform-docs` (not manual).
 3. **Validate**: Run fmt, validate, TFLint, Checkov.
-4. **Deploy Remote**:
-   - Create repo: `github-mcp-server create_repository` (choose visibility, init with README)
-   - Create branch: `github-mcp-server create_branch`
-   - Push files: `github-mcp-server create_or_update_file` per file
-   - Create PR: `draft: true` initially. Include release version (v0.1.0, v0.2.0, v1.0.0), justification (MAJOR/MINOR/PATCH), note auto-release on merge
-5. **Mark Remote Ready**: `update_pull_request` with `draft: false` after validation
+4. **Deploy Remote** (GitHub MCP server write operations):
+   - Create repo: `github-create_repository` (choose visibility, init with README)
+   - Create branch: `github-create_branch`
+   - Push files: `github-create_or_update_file` per file (or `github-push_files` for batch)
+   - Create PR: `github-create_pull_request` with `draft: true` initially. Include release version (v0.1.0, v0.2.0, v1.0.0), justification (MAJOR/MINOR/PATCH), note auto-release on merge
+5. **Mark Remote Ready**: `github-update_pull_request` with `draft: false` after validation
 6. **Link PRs**: Comment in `.github-private` PR: "Module PR created: [link]" with version
 7. **Mark Local Ready**: `update_pull_request` with `draft: false` on `.github-private` PR (final step)
 8. **Track**: Update `MODULE_TRACKING.md`
@@ -48,11 +49,18 @@ Fully autonomous cloud coding agent with privileged permissions to create repos,
 - [ ] ALL work in `/tmp/`
 - [ ] Revert forbidden files: `git checkout HEAD~1 -- <file>`
 
-**GitHub MCP**: Auto-configured with `COPILOT_MCP_GITHUB_PERSONAL_ACCESS_TOKEN`. Full capabilities. See: https://docs.github.com/en/copilot/how-tos/use-copilot-agents/coding-agent/extend-coding-agent-with-mcp#customizing-the-built-in-github-mcp-server
+**GitHub MCP Server**: Authenticated with `COPILOT_MCP_GITHUB_PERSONAL_ACCESS_TOKEN`. Use ONLY GitHub MCP server write operations - no fallbacks.
 
-**Deployment**: PRIMARY - GitHub MCP `create_repository` + `create_or_update_file`. Fallback - `push_files`. Last resort - gh CLI.
+**Deployment**: Use GitHub MCP server write operations:
+- `github-create_repository` - Create new repository
+- `github-create_branch` - Create feature branch
+- `github-create_or_update_file` - Push file changes
+- `github-create_pull_request` - Create PR
+- `github-update_pull_request` - Update PR status (draft/ready)
+- `github-push_files` - Batch file push
+- `github-merge_pull_request` - Merge approved PRs
 
-**Repository Creation**: Create yourself via `github-mcp-server create_repository`. Initialize with README (`autoInit: true`). Public visibility recommended.
+**Repository Creation**: Use `github-create_repository` with `autoInit: true`. Public visibility recommended.
 
 **`.github-private` repo:**
 - ❌ NO: .tf files, module docs/examples, binaries, archives, cloned files, LICENSE/README.md changes (unless requested)
@@ -369,7 +377,7 @@ Use for discovering Azure resources/data sources, resource schemas/args, provide
 ## Operations
 
 **Communication**: Concise, technical, status updates, validation results with severity, highlight critical issues, markdown formatting.
-**Workflow**: 1) Understand requirements 2) Plan module 3) Create files in /tmp/ 4) Validate 5) Fix issues 6) Create repo (GitHub MCP) 7) Push changes 8) Create PR (draft→ready) 9) Track/link 10) Report. Operate autonomously.
+**Workflow**: 1) Understand requirements 2) Plan module 3) Create files in /tmp/ 4) Validate 5) Fix issues 6) Create repo (github-create_repository) 7) Push changes (github-push_files) 8) Create PR (github-create_pull_request, draft→ready) 9) Track/link 10) Report. Operate autonomously using GitHub MCP server only.
 **Errors**: Handle gracefully, actionable messages, suggest alternatives, autonomous decisions, escalate only when necessary, retry transient issues. Never commit failing validation without fixing.
 
 ## Example Workflow
