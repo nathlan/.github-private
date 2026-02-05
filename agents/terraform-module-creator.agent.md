@@ -222,22 +222,69 @@ Workflow: Update docs, create tag (v1.2.3), changelog, GitHub release with notes
 3. `terraform validate`
 4. `tflint --init`
 5. `tflint --recursive`
-6. **Checkov** (scan external first, fix vulnerabilities in wrapper, verify):
+6. **Checkov Security Workflow** (CRITICAL - scan external, fix in wrapper, verify):
    ```bash
-   # Scan external module to identify security issues
+   # STEP 1: Scan external AVM module to identify security issues
    checkov -d .terraform/modules/<module_name> --config-file .checkov.yml
 
-   # Fix issues by setting secure defaults in wrapper (e.g., threat_intel_mode = "Deny")
+   # STEP 2: Analyze failures and categorize:
+   # - Example code only? → Ignore (not used in production)
+   # - Production code but parameter NOT exposed? → Document as limitation
+   # - Production code AND parameter IS exposed? → FIX in wrapper (see below)
 
-   # Verify wrapper fixes the issues
+   # STEP 3: Fix exposed security issues in wrapper by setting secure defaults
+   # For each failure where AVM exposes the parameter, set secure default in wrapper
+   # Examples:
+   #   - public_network_access_enabled = false (if AVM allows public access)
+   #   - default_action = "Deny" (for network rules)
+   #   - minimum_tls_version = "TLS1_2"
+   #   - threat_intelligence_mode = "Deny" (for firewall policies)
+   #   - enable_https_traffic_only = true
+
+   # STEP 4: Verify wrapper passes Checkov (should have 0 failures for YOUR code)
    checkov -d . --config-file .checkov.yml --skip-path .terraform
+
+   # EXPECTED RESULT:
+   #   - External module: May have failures (AVM issues we can't control)
+   #   - Wrapper module: MUST PASS (0 failures) after setting secure defaults
    ```
 7. `terraform-docs` (root + examples)
 
-Fix critical/high issues before proceeding.
+**CRITICAL EXPECTATION**: Wrapper modules MUST pass Checkov with 0 failures by setting secure defaults for all exposed security parameters. If AVM exposes a parameter that's failing security checks, YOU MUST override it with a secure default in the wrapper.
 
-**Security**: Pass Checkov (or document exceptions), secure defaults (encryption), Azure best practices, document security in README, no secrets. **Address external module vulnerabilities by setting secure defaults in wrapper** (e.g., if AVM allows public access, wrapper should default to private).
-**Handling Failures**: Stop workflow, clear errors, remediation steps, auto-fix safe items, manual review for security/breaking.
+**Security**:
+- **MUST**: Pass Checkov for wrapper code (0 failures expected)
+- **MUST**: Set secure defaults for ALL exposed AVM parameters that fail security checks
+- **MUST**: Document any unfixable AVM limitations (parameters not exposed)
+- **SHOULD**: Encrypt by default, follow Azure security best practices
+- **MUST NOT**: Commit secrets or bypass security checks
+
+**Checkov Failure Handling**:
+1. **External AVM failures**: Review each one
+   - In example code? → Note and ignore
+   - Parameter exposed by AVM? → **SET SECURE DEFAULT in wrapper** (REQUIRED)
+   - Parameter not exposed? → Document as "Known AVM limitation" in README
+2. **Wrapper failures**: **UNACCEPTABLE** - must fix before proceeding
+   - Wrapper must achieve 0 Checkov failures
+   - Fix by setting appropriate secure defaults
+   - **FALSE POSITIVES**: If 100% certain a check is a false positive:
+     - Add skip to `.checkov.yml` skip-check list (e.g., `- CKV_AZURE_123`)
+     - **MUST** add detailed justification in PR description explaining why it's a false positive
+     - Example: "CKV_AZURE_XX skipped - check requires X but Azure resource Y doesn't support it"
+     - Requires review and approval before merging
+
+**False Positive Guidelines**:
+- Only skip checks you are **100% certain** are false positives
+- **MUST** provide detailed justification in PR comments/description
+- Include: What the check requires, why it doesn't apply, evidence it's false positive
+- Examples of valid false positives:
+  - Check requires feature not supported by the Azure resource
+  - Check applies to wrong resource type
+  - Check logic is incorrect for specific use case
+- **NEVER** skip a check just because it's inconvenient to fix
+- All skips require review and approval
+
+**Handling Failures**: If wrapper fails Checkov, stop workflow and fix. Never commit a module where the wrapper has Checkov failures. External AVM failures are informational; wrapper failures are blocking. False positives can be skipped ONLY with documented justification in PR.
 
 ## Terraform MCP Server
 

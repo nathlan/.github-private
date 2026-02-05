@@ -558,45 +558,93 @@ After merging PRs #2 for storage-account and landing-zone-vending, all modules w
 
 **Is the "Scan External First, Fix in Wrapper" workflow necessary?**
 
-**Answer**: ✅ **YES for awareness**, ⚠️ **LIMITED for remediation**
+**Answer**: ✅ **YES - REQUIRED for production modules**
+
+**CRITICAL CLARIFICATION**:
+When creating wrapper modules, **YOU MUST set secure defaults for any exposed parameters that fail Checkov**. The wrapper module MUST achieve **0 Checkov failures** for your code.
 
 **Value Proposition:**
+- **REQUIRED**: Wrapper modules must pass Checkov (0 failures)
+- **REQUIRED**: Set secure defaults for all exposed security parameters
 - **HIGH VALUE**: Understanding security posture of dependencies
-- **LIMITED VALUE**: Actually fixing issues (most cannot be overridden)
-- **BEST USE**: Audit trail and informed decision-making
+- **DOCUMENTATION**: Record limitations for parameters not exposed by AVM
 
-**Recommended Workflow:**
+**Required Workflow:**
 
 ```bash
-# Step 1: Scan external AVM (for security awareness)
+# Step 1: Scan external AVM to identify issues
 checkov -d .terraform/modules/<module_name> --config-file .checkov.yml
 
-# Step 2: Categorize failures:
+# Step 2: Categorize failures and FIX what you can:
 #   - Example code only? → Ignore (not used in production)
-#   - Not exposed by AVM? → Document as known limitation
-#   - Exposed parameter? → Set secure default in wrapper
+#   - Production code + NOT exposed? → Document as "Known AVM limitation"
+#   - Production code + IS exposed? → **MUST FIX in wrapper** (set secure default)
 
-# Step 3: Scan wrapper (ensure YOUR code is secure)
+# Step 3: Set secure defaults in wrapper for ALL exposed parameters
+# Examples of required fixes:
+#   - public_network_access_enabled = false
+#   - default_action = "Deny"
+#   - minimum_tls_version = "TLS1_2"
+#   - enable_https_traffic_only = true
+
+# Step 4: Verify wrapper achieves 0 failures (REQUIRED)
 checkov -d . --config-file .checkov.yml --skip-path .terraform
+# EXPECTED: Passed checks: N, Failed checks: 0
 
-# Step 4: Document accepted risks in module README
+# Step 5: Document unfixable issues in README
 ```
 
+**Module Creation Requirements:**
+- ✅ **MUST**: Wrapper passes Checkov with 0 failures
+- ✅ **MUST**: Set secure defaults for ALL exposed security parameters that fail
+- ✅ **MUST**: Document in README any AVM limitations (parameters not exposed)
+- ✅ **MUST**: Review external failures and categorize each one
+- ⚠️ **ALLOWED**: Skip checks that are 100% confirmed false positives (with justification)
+- ❌ **NEVER**: Commit a module where wrapper has Checkov failures without fixing or documented skips
+
+**False Positive Handling:**
+If a Checkov check is a **confirmed false positive** (100% certain):
+1. Add skip to `.checkov.yml` skip-check list:
+   ```yaml
+   skip-check:
+     - CKV_TF_1      # Existing skip for registry modules
+     - CKV_AZURE_XX  # NEW: [Your justification here]
+   ```
+2. **MUST** document in PR description with detailed justification:
+   - What the check requires
+   - Why it doesn't apply to this module
+   - Evidence it's a false positive
+3. Example justification:
+   > "Skipping CKV_AZURE_XX: This check requires feature Y which Azure resource Z doesn't support. See Azure documentation: [link]. This is a known Checkov false positive for this resource type."
+4. Requires review and approval before merging
+5. **NEVER** skip checks just because they're inconvenient to fix
+
 **When to Use This Workflow:**
+- ✅ **ALWAYS** when creating/updating modules (required step)
 - ✅ Security audits and compliance reporting
 - ✅ Risk assessment before adopting AVM modules
-- ✅ Setting secure defaults for exposed parameters
-- ✅ Deciding whether to fork AVM modules
+- ✅ Deciding whether AVM is suitable or needs forking
 
-**When NOT to Rely On It:**
-- ❌ Expecting to fix all external issues
-- ❌ Worrying about example code failures
-- ❌ Issues not exposed as AVM parameters
+**Acceptable vs Unacceptable Failures:**
+- ✅ **ACCEPTABLE**: External AVM failures (informational - shows what exists)
+- ✅ **ACCEPTABLE**: External failures in example code (not used in production)
+- ✅ **ACCEPTABLE**: External failures where parameter not exposed (document limitation)
+- ✅ **ACCEPTABLE**: Wrapper failures that are confirmed false positives (with documented skip)
+- ❌ **UNACCEPTABLE**: Wrapper module failures without fix or justified skip
+- ❌ **UNACCEPTABLE**: Ignoring exposed parameters that fail security checks
+- ❌ **UNACCEPTABLE**: Skipping checks without detailed justification
 
 ### Conclusion
 
-The Checkov workflow **successfully works** and provides **valuable security visibility**, but has **limited remediation capability**. Most AVM security issues cannot be fixed in wrapper modules without forking the upstream code.
+The Checkov workflow **is REQUIRED for production modules**. Wrapper modules **MUST pass Checkov** (0 failures) by setting secure defaults for all exposed security parameters.
 
-**Recommendation**: Continue using the workflow for **awareness and audit purposes**, but set realistic expectations about what can be fixed in wrapper modules. The primary value is **transparency** about dependency security posture, not comprehensive remediation.
+**Corrected Understanding**:
+1. Scan external AVM modules - identifies what security issues exist
+2. Categorize each failure - determine what CAN be fixed
+3. **SET SECURE DEFAULTS** in wrapper for ALL exposed parameters that fail
+4. Verify wrapper passes (0 failures) - **REQUIRED before committing**
+5. Document limitations for unfixable issues (parameters not exposed)
+
+**Key Point**: External failures are informational. Wrapper failures are **blocking**. You MUST achieve 0 Checkov failures in wrapper code by setting appropriate secure defaults for all exposed parameters.
 
 **Best Practice**: Scan external modules to understand risks, fix what you can, document what you cannot, and consider contributing fixes back to AVM upstream for critical issues.
