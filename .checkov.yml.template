@@ -1,0 +1,20 @@
+# Checkov Configuration for Terraform Modules
+# Security and compliance scanning for Terraform plan files
+# Usage: checkov -f tfplan.json
+
+# Output settings
+compact: true
+quiet: true
+output: cli
+
+# Scan both Terraform code and plan files
+framework:
+  - terraform
+  - terraform_plan
+
+# Skip checks with justification
+skip-check:
+  # Registry modules use version constraints, not commit hashes
+  - CKV_TF_1
+
+# For more options: https://www.checkov.io/2.Basics/CLI%20Command%20Reference.html

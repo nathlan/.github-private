@@ -73,12 +73,30 @@ Fully autonomous cloud coding agent with privileged permissions to create repos,
 - **For submodules**: Run terraform-docs in EACH submodule dir. Include usage example with source path (e.g., `source = "github.com/org/module//modules/blob"`). Parent README lists submodules with usage.
 
 ### 2. Validation (MUST run in order)
-1. `terraform init -backend=false` (download external modules for Checkov scanning)
+1. `terraform init -backend=false`
 2. `terraform fmt -check -recursive`
 3. `terraform validate`
 4. `tflint --init` (download azurerm plugin)
 5. `tflint --recursive`
-6. `checkov --config-file .checkov.yaml` (scans modules in .terraform/ from init)
+6. Checkov (Terraform Plan scanning):
+   ```bash
+   # In examples/basic directory with provider.tf
+   cd examples/basic
+   terraform plan -out=tfplan.binary
+   terraform show -json tfplan.binary > tfplan.json
+   checkov -f tfplan.json
+   rm tfplan.binary tfplan.json  # Cleanup
+   cd ../..
+   ```
+   - Scans actual resources that would be created, including from external modules
+   - More comprehensive than directory scanning
+   - Requires `provider.tf` in examples directory with minimal config:
+     ```hcl
+     provider "azurerm" {
+       features {}
+       skip_provider_registration = true
+     }
+     ```
 7. `terraform-docs`:
    - Without submodules: `terraform-docs markdown table --config .terraform-docs.yml .`
    - With submodules: Use custom config with `recursive.enabled: true` and `recursive.path: modules`
@@ -97,23 +115,27 @@ Fully autonomous cloud coding agent with privileged permissions to create repos,
 ├── main.tf, variables.tf, outputs.tf, versions.tf
 ├── README.md (terraform-docs format)
 ├── LICENSE, .gitignore
-├── .tflint.hcl, .checkov.yaml
+├── .tflint.hcl, .checkov.yml
 ├── .github/workflows/release-on-merge.yml
-├── examples/basic/{main.tf, README.md}
+├── examples/basic/{main.tf, provider.tf, README.md}
 └── tests/ (optional)
 ```
+
+**Note**: Examples must include `provider.tf` with minimal provider configuration for Terraform plan generation during Checkov scanning.
 
 **WITH submodules**:
 ```
 /
 ├── main.tf (generic parent), variables.tf (no defaults), outputs.tf, versions.tf
 ├── README.md (with submodule usage)
-├── LICENSE, .gitignore, .tflint.hcl, .checkov.yaml
+├── LICENSE, .gitignore, .tflint.hcl, .checkov.yml
 ├── .github/workflows/release-on-merge.yml
 ├── modules/{blob,file}/ (each with main.tf, variables.tf w/defaults, outputs.tf, versions.tf, README.md w/usage, examples/basic/)
-├── examples/basic/
+├── examples/basic/{main.tf, provider.tf, README.md}
 └── tests/ (optional)
 ```
+
+**Note**: Examples must include `provider.tf` with minimal provider configuration for Terraform plan generation during Checkov scanning.
 
 Each submodule README MUST include usage with double-slash: `source = "github.com/org/module//modules/blob"`
 
@@ -202,12 +224,32 @@ Workflow: Update docs, create tag (v1.2.3), changelog, GitHub release with notes
 ## Module Standards
 
 **Naming**: `terraform-azurerm-<service>-<purpose>`, snake_case variables/outputs, descriptive resources
-**Required Files**: README.md (description, requirements, usage, I/O, AVM, markers), versions.tf, variables.tf, outputs.tf, main.tf, .tflint.hcl, .checkov.yaml, .terraform-docs.yml, examples/
+**Required Files**: README.md (description, requirements, usage, I/O, AVM, markers), versions.tf, variables.tf, outputs.tf, main.tf, .tflint.hcl, .checkov.yml, .terraform-docs.yml, examples/
 **Code Quality**: All variables/outputs have descriptions, consistent formatting (fmt), no hardcoded values, tags on resources, lifecycle blocks, validation rules
 
 ## Validation & Security
 
-**Pre-commit**: 1) terraform init -backend=false 2) fmt -recursive 3) validate 4) tflint --init 5) tflint --recursive 6) checkov --config-file .checkov.yaml 7) terraform-docs 8) terraform-docs examples. Fix critical/high issues.
+**Pre-commit**: 
+1. `terraform init -backend=false`
+2. `terraform fmt -recursive`
+3. `terraform validate`
+4. `tflint --init`
+5. `tflint --recursive`
+6. Checkov with Terraform Plan (run in examples/basic):
+   ```bash
+   cd examples/basic
+   terraform plan -out=tfplan.binary
+   terraform show -json tfplan.binary > tfplan.json
+   checkov -f tfplan.json
+   rm tfplan.binary tfplan.json
+   cd ../..
+   ```
+7. `terraform-docs` (root + examples)
+
+Fix critical/high issues before proceeding.
+
+**Note**: Examples must include `provider.tf` for Checkov plan scanning.
+
 **Security**: Pass Checkov (or document exceptions), secure defaults (encryption), Azure best practices, document security in README, no secrets.
 **Handling Failures**: Stop workflow, clear errors, remediation steps, auto-fix safe items, manual review for security/breaking.
 
@@ -229,10 +271,17 @@ mkdir -p /tmp/terraform-azurerm-example/examples/basic
 
 # 2. Copy templates
 cp .tflint.hcl.template .tflint.hcl
-cp .checkov.yaml.template .checkov.yaml
+cp .checkov.yml.template .checkov.yml
 cp .terraform-docs.yml .
 
 # 3. Generate files (versions.tf, main.tf, variables.tf, outputs.tf, README.md)
+# 3a. Create provider.tf in examples/basic for Checkov scanning
+cat > examples/basic/provider.tf << 'EOF'
+provider "azurerm" {
+  features {}
+  skip_provider_registration = true
+}
+EOF
 
 # 4-9. Validate
 cd /tmp/terraform-azurerm-example
@@ -241,7 +290,12 @@ terraform fmt -recursive
 terraform validate
 tflint --init
 tflint --recursive
-checkov --config-file .checkov.yaml
+cd examples/basic
+terraform plan -out=tfplan.binary
+terraform show -json tfplan.binary > tfplan.json
+checkov -f tfplan.json
+rm tfplan.binary tfplan.json
+cd ../..
 terraform-docs markdown table --config .terraform-docs.yml .
 terraform-docs markdown table --output-file README.md --output-mode inject examples/basic
 

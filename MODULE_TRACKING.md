@@ -190,13 +190,28 @@ checkov --config-file .checkov.yaml  # Ignores .terraform/ directory by default
 - Checkov scanning only wrapper code is appropriate for this use case
 
 **Updated Guidance**:
-- ✅ KEEP current workflow for wrapper module creation
-- ✅ Document that Checkov scans wrapper code, not external AVM modules
-- ✅ Organizations should either: (a) trust AVM modules, or (b) fork and maintain their own versions
-- ✅ For comprehensive security scanning of actual deployments, use `terraform plan` + Checkov
-- ❌ DON'T scan `.terraform/` directories - this is non-standard and unnecessary for wrapper modules
+- ✅ ADOPTED: Terraform Plan scanning for comprehensive security analysis
+- ✅ Scans actual resources that would be created, including from external modules
+- ✅ More realistic security assessment than directory scanning
+- ✅ Requires provider configuration with example/mock values for plan generation
 
-**Recommendation for Agent Instructions**:
-- Clarify that `terraform init -backend=false` is for TFLint and validation, not Checkov
-- Document that Checkov scans wrapper module code only (by design)
-- If comprehensive scanning of AVM modules is needed, fork them and scan directly
+**New Workflow (2026-02-05)**:
+```bash
+terraform init -backend=false
+terraform plan -out=tfplan.binary  # Requires provider config with mock values
+terraform show -json tfplan.binary > tfplan.json
+checkov -f tfplan.json
+rm tfplan.binary tfplan.json  # Cleanup
+```
+
+**Benefits**:
+- Scans the actual resources that Terraform would create
+- Includes resources from external modules (AVM)
+- Detects misconfigurations in resource definitions
+- More comprehensive than directory scanning
+
+**Configuration Updates**:
+- Renamed `.checkov.yaml` to `.checkov.yml` for consistency
+- Simplified `.checkov.yml` template (removed excessive comments)
+- Simplified `.tflint.hcl` template (cleaner, focused on essentials)
+- Added documentation links to both templates
