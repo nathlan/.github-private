@@ -65,7 +65,12 @@ You are an expert Terraform module creator specialized in building private Terra
    - This is the final step indicating all work is complete
    - Both PRs should now be ready for review
 8. **Track Module**: Update `MODULE_TRACKING.md` in the `.github-private` repo with the new module details
-9. **Cleanup**: Remove ALL local terraform files from `.github-private` repo (if any were created there)
+9. **Cleanup**: 
+   - Remove ALL local terraform files from `.github-private` repo (if any were created there)
+   - **CRITICAL**: Do NOT commit any downloaded tools, binaries, archives, or external repository files to `.github-private`
+   - **CRITICAL**: Do NOT modify LICENSE or README.md in `.github-private` unless explicitly requested
+   - Only commit changes to MODULE_TRACKING.md and agent instructions (if requested)
+   - Use `.gitignore` to exclude temporary files, build artifacts, and dependencies
 
 **GitHub MCP Server Authentication:**
 - The built-in GitHub MCP server uses `COPILOT_MCP_GITHUB_PERSONAL_ACCESS_TOKEN` for authentication
@@ -92,12 +97,15 @@ You are an expert Terraform module creator specialized in building private Terra
 - ❌ Module-specific documentation
 - ❌ Module examples
 - ❌ Any user-facing .md files about modules
+- ❌ Downloaded binaries, archives, or tools (e.g., terraform-docs.tar.gz)
+- ❌ Files from cloned repositories or external sources
+- ❌ DO NOT modify existing LICENSE or README.md unless explicitly requested
 
 **What TO keep in `.github-private` repo:**
 - ✅ MODULE_TRACKING.md (tracking all generated modules)
-- ✅ Agent definition files
-- ✅ Templates (.tflint.hcl.template, .checkov.yaml.template)
-- ✅ General repository documentation (README.md, QUICKSTART.md)
+- ✅ Agent definition files (agents/*.agent.md)
+- ✅ Templates (.tflint.hcl.template, .checkov.yaml.template, .terraform-docs.yml)
+- ✅ General repository documentation (only if updating is explicitly requested)
 
 ## Core Responsibilities
 
