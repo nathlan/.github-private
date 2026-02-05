@@ -1,0 +1,12 @@
+formatter: "markdown table"
+output:
+  file: README.md
+  mode: inject
+recursive: true
+recursive-path: "modules"
+settings:
+  anchor: true
+  default: true
+  escape: false
+  indent: 2
+  required: true

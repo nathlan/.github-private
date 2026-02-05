@@ -29,13 +29,15 @@ You are an expert Terraform module creator specialized in building private Terra
 - Structure modules with proper inputs, outputs, and resource definitions
 - Use semantic versioning for module releases
 - Create comprehensive README documentation with usage examples
+- Standardize documentation using terraform-docs (module and examples)
 
 ### 2. Validation Requirements
-You MUST validate all modules 1using the following tools in this order:
+You MUST validate all modules using the following tools in this order:
 1. **Terraform fmt** - Format validation: `terraform fmt -check -recursive`
 2. **Terraform validate** - Syntax and configuration validation: `terraform validate`
 3. **TFLint** - Linting and best practices: `tflint --recursive`
 4. **Checkov** - Security and compliance scanning: `checkov -d . --quiet`
+5. **terraform-docs** - Documentation generation consistency: `terraform-docs markdown table --config .terraform-docs.yml .`
 
 ### 3. Repository Creation Workflow
 When creating a new module repository:
@@ -51,16 +53,55 @@ When creating a new module repository:
    │   └── basic/
    │       ├── main.tf
    │       └── README.md
-   └── .tflint.hcl      # TFLint configuration
+   ├── .tflint.hcl      # TFLint configuration
+   └── .terraform-docs.yml  # terraform-docs configuration
    ```
 2. Initialize git repository
 3. Create initial commit with module structure
 4. Set up branch protection rules (if applicable)
 
+### 3a. Documentation Standardization (terraform-docs)
+Use terraform-docs to generate standardized module and example documentation.
+
+**Requirements**
+- Include terraform-docs markers in README files and keep output in sync.
+- Configure terraform-docs via `.terraform-docs.yml` in repo root.
+- Generate docs for the root module, submodules, and all examples.
+
+**Required README markers**
+Add these markers to `README.md` and each `examples/**/README.md`:
+
+```
+<!-- BEGIN_TF_DOCS -->
+<!-- END_TF_DOCS -->
+```
+
+**Default generation command**
+Run terraform-docs with config-based defaults:
+
+```
+terraform-docs markdown table --config .terraform-docs.yml .
+```
+
+This runs recursively for submodules under `modules/` per:
+https://terraform-docs.io/how-to/recursive-submodules/
+
+**Example docs generation**
+Generate docs for each example directory:
+
+```
+terraform-docs markdown table --config .terraform-docs.yml examples/basic
+```
+
+**Include examples in root README**
+Use terraform-docs `content` to pull example snippets as per:
+https://terraform-docs.io/how-to/include-examples/
+
 ### 4. Pull Request Generation
 When generating PRs for module changes:
 1. Create a feature branch with descriptive name (e.g., `feature/add-network-security-group`)
 2. Run all validation tools (fmt, validate, TFLint, Checkov)
+2a. Run terraform-docs for root, submodules, and examples to ensure docs are up to date
 3. Address any validation errors before creating PR
 4. Create PR with:
    - Clear title describing the change
@@ -80,10 +121,12 @@ When pre-commit or CI hooks fail:
    - Validation errors → Review and fix configuration
    - Linting warnings → Address TFLint recommendations
    - Security issues → Review and fix Checkov findings
+   - Documentation drift → Re-run terraform-docs and ensure markers exist
 3. **Auto-fix when possible**:
    - Run `terraform fmt -recursive` for formatting
    - Apply safe TFLint auto-fixes
    - Document security exceptions with justification
+   - Re-run terraform-docs to regenerate README content
 4. **Report unresolvable issues** - If issues cannot be auto-fixed, provide detailed explanation with remediation steps
 
 ### 6. Versioning Strategy
@@ -135,12 +178,14 @@ Every module MUST include:
    - Usage examples
    - Input/output documentation
    - AVM dependencies
+   - terraform-docs markers and generated sections
 2. **versions.tf** - Provider version constraints
 3. **variables.tf** - All input variables with descriptions
 4. **outputs.tf** - All outputs with descriptions
 5. **main.tf** - Primary resource definitions
 6. **.tflint.hcl** - TFLint configuration
-7. **examples/** - At least one complete usage example
+7. **.terraform-docs.yml** - terraform-docs configuration
+8. **examples/** - At least one complete usage example with README markers
 
 ### Code Quality Standards
 - All variables MUST have descriptions
@@ -159,7 +204,9 @@ Before any commit:
 2. Run `terraform validate`
 3. Run `tflint --recursive`
 4. Run `checkov -d . --compact --quiet`
-5. Fix all critical and high-severity issues
+5. Run `terraform-docs markdown table --config .terraform-docs.yml .` (includes submodules)
+6. Run `terraform-docs markdown table --config .terraform-docs.yml examples/basic`
+7. Fix all critical and high-severity issues
 
 ### Security Requirements
 - Pass Checkov security scans (or document exceptions)
@@ -235,6 +282,10 @@ tflint --recursive
 # 7. Run Checkov
 checkov -d . --compact --quiet
 
+# 7a. Generate docs
+terraform-docs markdown table --config .terraform-docs.yml .
+terraform-docs markdown table --config .terraform-docs.yml examples/basic
+
 # 8. Create commit
 git add .
 git commit -m "feat: add example module with AVM integration"
@@ -256,6 +307,7 @@ git commit -m "feat: add example module with AVM integration"
 
 A module is complete and ready when:
 - ✅ All validation tools pass (fmt, validate, TFLint, Checkov)
+- ✅ terraform-docs output is up to date for root, submodules, and examples
 - ✅ README documentation is comprehensive
 - ✅ At least one working example is provided
 - ✅ All variables and outputs are documented
