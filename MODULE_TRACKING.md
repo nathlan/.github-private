@@ -189,41 +189,48 @@ checkov --config-file .checkov.yaml  # Ignores .terraform/ directory by default
 - Running `terraform init -backend=false` is still useful for: TFLint (downloads providers), terraform validate
 - Checkov scanning only wrapper code is appropriate for this use case
 
-**Resolution (2026-02-05 - FINAL)**:
+**Resolution (2026-02-05 - FINAL WORKING APPROACH)**:
 
-**The Problem**: Checkov needs to scan both wrapper code AND external AVM modules.
+**Root Cause Found**: Checkov has a hardcoded environment variable `CKV_IGNORED_DIRECTORIES` that defaults to `"node_modules,.terraform,.serverless"`. This is why Checkov skips `.terraform/` by default - it's NOT related to `.gitignore`.
 
-**Methods Attempted**:
+**Tested Approaches**:
 1. ❌ `download-external-modules: true` - FAILS with SSL errors in sandboxed environments
-2. ❌ `CHECKOV_EXPERIMENTAL_TERRAFORM_MANAGED_MODULES=True` - Does NOT work as documented, still skips .terraform/
-3. ✅ **Explicit directory scanning** - WORKS: `checkov -d .terraform/modules/avm_firewall`
+2. ❌ `CHECKOV_EXPERIMENTAL_TERRAFORM_MANAGED_MODULES=True` - Module tries to download nested dependencies, fails
+3. ❌ `CKV_IGNORED_DIRECTORIES=""` - Still fails on nested module downloads
+4. ✅ **Scan directories separately** - WORKS
 
-**Working Solution**:
+**WORKING SOLUTION** (scan external then wrapper):
 ```bash
 # Step 1: Download modules with terraform init
 terraform init -backend=false
 
-# Step 2: Scan wrapper code
-checkov -d . --config-file .checkov.yml --skip-path .terraform
-
-# Step 3: Scan external AVM module explicitly  
+# Step 2: Scan external AVM module first (find security issues)
 checkov -d .terraform/modules/avm_firewall --config-file .checkov.yml
+
+# Step 3: Scan wrapper code (ensure wrapper is secure)
+checkov -d . --config-file .checkov.yml --skip-path .terraform
 ```
 
-**Results**:
-- Wrapper scan: 1 check passed
-- AVM module scan: 20 checks passed, 1 failed (CKV_AZURE_216 - DenyIntelMode not set to Deny)
+**Why Scan External First**: 
+- Security issues in external modules should be addressed first (may need to update module version or fork)
+- Wrapper code issues can be fixed directly in your code
+- Following the requirement: "scan external first and then fix in wrapper"
 
-**Why This Matters**:
-- The security finding (CKV_AZURE_216) is in the AVM module, NOT the wrapper
-- Without scanning .terraform/, we miss real security issues
-- The wrapper is just pass-through code; real resources are in AVM
+**Results**:
+- AVM module: 20 checks passed, 1 failed (CKV_AZURE_216 - DenyIntelMode)
+- Wrapper: 1 check passed
+- **Total: 21 checks, 1 security finding**
+
+**`.gitignore` Impact**: 
+- `.terraform/` should remain in `.gitignore` (don't commit downloaded modules)
+- Checkov's exclusion is independent of `.gitignore`
+- Scanning still works even with `.terraform/` gitignored
 
 **Configuration Updates**:
-- Removed `download-external-modules: true` from `.checkov.yml` template (broken in sandbox)
-- Added comment explaining `CHECKOV_EXPERIMENTAL_TERRAFORM_MANAGED_MODULES=True` (doesn't work)
-- Updated agent instructions to explicitly scan .terraform/modules/ directories
-- Simplified `.tflint.hcl` template (removed invalid rules)
+- Updated `.checkov.yml` template with clear instructions for separate scanning
+- Removed references to broken `CHECKOV_EXPERIMENTAL_TERRAFORM_MANAGED_MODULES` flag
+- Added comment about Checkov's built-in `.terraform/` exclusion
+- Simplified instructions to only include working approach
 
 ### Complete Validation Test - terraform-azurerm-firewall (2026-02-05)
 **Purpose**: Test all validation tools on an existing module to identify gaps and issues in agent instructions.
@@ -277,43 +284,31 @@ checkov -d .terraform/modules/avm_firewall --config-file .checkov.yml
 - ✅ **terraform fmt**: Working perfectly
 - ✅ **terraform validate**: Working perfectly
 - ✅ **tflint**: Working perfectly (finds legitimate code quality issues)
-- ❌ **checkov**: FAILING - Cannot download external modules due to SSL certificate errors in sandboxed environment
+- ✅ **checkov**: Working with separate directory scanning approach
 - ✅ **terraform-docs**: Working perfectly
 
-**Critical Limitation - Checkov External Module Scanning**:
-- **Status**: FAILING in sandboxed environment
-- **Error**: `[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: self-signed certificate in certificate chain`
-- **Impact**: Checkov only scans wrapper code (1 check), does NOT scan external AVM modules (20+ checks)
-- **Expected Behavior**: Checkov should download and scan external modules from Terraform Registry
-- **Actual Behavior**: SSL certificate validation fails, modules not downloaded
-- **Root Cause**: Sandboxed environment has SSL interception/proxy with self-signed certificates
-- **Severity**: HIGH - Security scanning is incomplete without external module checks
-
-**Testing Required in Non-Sandboxed Environment**:
-- The `download-external-modules: true` configuration needs validation in real environment
-- CI/CD pipelines should have proper network access and SSL certificates
-- **Action**: Test this workflow on a developer workstation or CI/CD environment with proper network access
+**Checkov External Module Scanning - RESOLVED**:
+- **Root Cause**: Checkov's `CKV_IGNORED_DIRECTORIES` env var defaults to `"node_modules,.terraform,.serverless"`
+- **Not Related To**: `.gitignore` (Checkov has its own exclusion mechanism)
+- **Working Solution**: Scan `.terraform/modules/` and root separately
+- **Order**: Scan external modules first (security issues may require version updates), then wrapper
+- **Results**: 21 total checks (20 in AVM module, 1 in wrapper), 1 security finding in AVM
 
 **Gaps in Agent Instructions**:
 
-1. **Checkov Module Scanning - CRITICAL ISSUE**:
-   - Current instruction: `download-external-modules: true` in config file
-   - Reality: FAILS in sandboxed environment with SSL certificate errors
-   - Impact: **Security scanning is incomplete** - only scans wrapper code, not external AVM modules
-   - **Gap Identified**: Agent instructions assume Checkov will successfully download modules, but this fails in restricted environments
-   - **Required Fix**: 
-     - Document that Checkov external module scanning requires proper network access and valid SSL certificates
-     - Add fallback instructions for environments where external module download fails
-     - Consider alternative: Use `CHECKOV_EXPERIMENTAL_TERRAFORM_MANAGED_MODULES=True` with `terraform init` as primary method (modules already downloaded to `.terraform/`)
-     - Add validation step to check if external modules were actually scanned (look for "Downloaded X modules" or similar in output)
-
+1. **Checkov Module Scanning - RESOLVED**:
+   - Root cause: Checkov's `CKV_IGNORED_DIRECTORIES` env var defaults to excluding `.terraform/`
+   - Solution: Scan external modules and wrapper separately
+   - **Working approach documented**: Scan `.terraform/modules/<module_name>` first, then wrapper
+   - Order matters: Fix external module issues first (may need version update), then wrapper issues
+   
 2. **Empty List Equality Pattern**:
    - Agent should use `length(var.list) > 0` instead of `var.list != []`
    - Add to coding standards to prevent this warning
 
 3. **File Extension Standardization**:
-   - Decide on `.yml` or `.yaml` and use consistently
-   - Update all templates and references
+   - Standardized on `.yml` extension for consistency
+   - Updated all templates
 
 **Recommendation - UPDATED**: 
 ❌ **CRITICAL GAP FOUND**: Checkov external module scanning does not work in sandboxed environments. The agent instructions need updating to:
@@ -329,18 +324,30 @@ checkov -d .terraform/modules/avm_firewall --config-file .checkov.yml
 - **Action**: Accept as known limitation of AVM dependency
 
 **Conclusion**:
-❌ **CRITICAL ISSUE IDENTIFIED**: Checkov external module scanning fails in sandboxed environments due to SSL certificate errors. This is a validation failure, not an acceptable limitation.
+✅ **ISSUE RESOLVED**: All validation tools work correctly. Checkov external module scanning requires separate directory scans.
 
-**Impact**: Security scanning is incomplete - only wrapper code is scanned, external AVM modules (where most security checks would apply) are NOT scanned.
+**Root Cause Identified**: 
+- Checkov excludes `.terraform/` by default via `CKV_IGNORED_DIRECTORIES` environment variable
+- This is independent of `.gitignore`
+- `.terraform/` should remain in `.gitignore` (don't commit downloaded modules)
 
-**Action Required**:
-1. Update agent instructions to use `CHECKOV_EXPERIMENTAL_TERRAFORM_MANAGED_MODULES=True` as primary method
-2. Test complete validation workflow in non-sandboxed environment (developer workstation or CI/CD)
-3. Add .external_modules/ to .gitignore (if using download-external-modules)
-4. Add validation check to confirm external modules were scanned
-5. Document known limitation in sandboxed environments
+**Working Validation Workflow**:
+```bash
+terraform init -backend=false
+terraform fmt -recursive
+terraform validate
+tflint --init && tflint --recursive
+checkov -d .terraform/modules/<module_name> --config-file .checkov.yml  # External first
+checkov -d . --config-file .checkov.yml --skip-path .terraform         # Wrapper second
+terraform-docs markdown table --config .terraform-docs.yml .
+```
 
-**Recommendation**: The validation workflow has a critical gap. Module security scanning is incomplete in the current setup.
+**Impact**: 
+- Successfully scans both wrapper and external modules (21 total checks)
+- Found real security issue (CKV_AZURE_216) in upstream AVM module
+- Validation workflow is complete and production-ready
+
+**Recommendation**: Agent instructions updated with proven working approach. No critical gaps remaining.
 
 ### Configuration File Update - Environment Variable to Config (2026-02-05)
 **Issue**: Using environment variable `CHECKOV_EXPERIMENTAL_TERRAFORM_MANAGED_MODULES=True` for Checkov is not ideal.
@@ -366,3 +373,40 @@ CHECKOV_EXPERIMENTAL_TERRAFORM_MANAGED_MODULES=True checkov -d . --config-file .
 # New approach (config file)
 checkov -d . --config-file .checkov.yml
 ```
+
+### Checkov .terraform Exclusion Discovery (2026-02-05)
+**Investigation**: Why does Checkov skip `.terraform/` directory even when not in `.gitignore`?
+
+**Root Cause Found**: Checkov has hardcoded environment variable in source code:
+```python
+IGNORED_DIRECTORIES_ENV = os.getenv("CKV_IGNORED_DIRECTORIES", "node_modules,.terraform,.serverless")
+```
+Located in: `/checkov/common/runners/base_runner.py`
+
+**Key Findings**:
+- Checkov ignores `.terraform/` by DEFAULT (not related to `.gitignore`)
+- The `.gitignore` file has NO impact on Checkov's scanning behavior
+- Overriding with `CKV_IGNORED_DIRECTORIES=""` still fails because nested modules try to download dependencies
+- `CHECKOV_EXPERIMENTAL_TERRAFORM_MANAGED_MODULES=True` flag doesn't work as documented
+
+**Tested Approaches**:
+1. ❌ Removed `.gitignore` entirely - No change, still 1 check
+2. ❌ `CKV_IGNORED_DIRECTORIES=""` - Still 1 check (nested module download failures)
+3. ❌ `CKV_IGNORED_DIRECTORIES="node_modules"` - Still 1 check
+4. ✅ Scan directories separately - **WORKS** (21 checks total)
+
+**Final Working Solution**:
+```bash
+# Scan external module first (security issues)
+checkov -d .terraform/modules/avm_firewall --config-file .checkov.yml
+
+# Scan wrapper second (local code)
+checkov -d . --config-file .checkov.yml --skip-path .terraform
+```
+
+**Results**:
+- External scan: 20 passed, 1 failed (CKV_AZURE_216)
+- Wrapper scan: 1 passed
+- Total: 21 checks, 1 security finding
+
+**`.gitignore` Status**: Keep `.terraform/` in `.gitignore` - it's correct to not commit downloaded modules.
