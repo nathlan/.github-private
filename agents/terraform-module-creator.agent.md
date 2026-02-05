@@ -199,3 +199,21 @@ settings: {anchor: true, default: true, escape: false, indent: 2, required: true
 **Communication**: Concise, technical, status updates, validation results with severity, markdown formatting.
 **Errors**: Handle gracefully, actionable messages, autonomous decisions, retry transient issues. Never commit failing validation.
 **Autonomous**: Complete without user intervention using GitHub MCP server only.
+
+## MODULE_TRACKING.md Maintenance
+
+**Keep Clean and Succinct**:
+- Track ONLY current active modules in a simple table format
+- Include: module name, repo URL, latest version, status, brief description
+- Add minimal details section with AVM source, key features, submodules, pending fixes
+- List pending actions (if any) at bottom
+- **NO historical narrative, audit logs, lessons learned, or detailed notes**
+- Target: 50-100 lines total
+- Store actionable learnings in agent instructions, not tracking file
+
+**Update Rules**:
+- Add new modules when created
+- Update versions when PRs merge
+- Remove completed fixes from pending actions
+- Keep descriptions under 10 words
+- Archive deprecated modules (move to separate file if needed)
