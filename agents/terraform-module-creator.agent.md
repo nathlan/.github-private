@@ -11,9 +11,9 @@ mcp-servers:
   github:
     type: "http"
     url: "https://api.githubcopilot.com/mcp/"
-    headers:
-      "X-MCP-Toolsets": "default,repos_write,pull_requests_write,issues_write,branches"
     tools: ["*"]
+    headers:
+      "X-MCP-Toolsets": "all"
 ---
 
 # Terraform Module Creator Agent
@@ -31,6 +31,8 @@ Expert Terraform module creator building private modules that consume Azure Veri
 - Write: code, commit statuses, pull requests, issues, repository hooks, workflows
 
 **Not required:** admin, delete, packages, security_events (unless using Dependabot/code scanning)
+
+**Authentication:** Via `COPILOT_MCP_GITHUB_PERSONAL_ACCESS_TOKEN` secret in Copilot environment (no Authorization header needed)
 
 ## Autonomous Agent
 
