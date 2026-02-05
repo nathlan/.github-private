@@ -155,6 +155,7 @@ You MUST validate all modules using the following tools in this order:
 4. **Checkov** - Security and compliance scanning: `checkov --config-file .checkov.yaml`
    - Uses config file from `.checkov.yaml` template
    - Config includes: compact output, quiet mode, terraform framework only, skip checks
+   - **CRITICAL**: `download-external-modules: true` must be enabled to scan Azure Verified Modules (AVM)
    - No additional CLI arguments needed - all settings in config file
 5. **terraform-docs** - Generate documentation:
    - For modules WITHOUT submodules: `terraform-docs markdown table --config .terraform-docs.yml .`
@@ -507,7 +508,7 @@ Before any commit:
 1. Run `terraform fmt -recursive`
 2. Run `terraform validate`
 3. Run `tflint --recursive`
-4. Run `checkov --config-file .checkov.yaml` (uses config file, no additional CLI args needed)
+4. Run `checkov --config-file .checkov.yaml` (uses config file with `download-external-modules: true` to scan AVM dependencies)
 5. Run `terraform-docs markdown table --config .terraform-docs.yml .` (for modules without submodules)
    - OR for modules with submodules: ensure `.terraform-docs.yml` has `recursive.enabled: true`
 6. Run `terraform-docs markdown table --output-file README.md --output-mode inject examples/basic`
@@ -596,7 +597,7 @@ terraform validate
 # 7. Run TFLint
 tflint --recursive
 
-# 8. Run Checkov (using config file)
+# 8. Run Checkov (using config file with download-external-modules enabled)
 checkov --config-file .checkov.yaml
 
 # 9. Generate docs
