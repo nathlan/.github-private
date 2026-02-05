@@ -1,6 +1,6 @@
 # Checkov Configuration for Terraform Modules
 # Security and compliance scanning for Terraform code
-# Usage: CHECKOV_EXPERIMENTAL_TERRAFORM_MANAGED_MODULES=True checkov -d . --config-file .checkov.yml
+# Docs: https://www.checkov.io/7.Scan%20Examples/Terraform.html
 
 # Output settings
 compact: true
@@ -15,5 +15,10 @@ framework:
 skip-check:
   # Registry modules use version constraints, not commit hashes
   - CKV_TF_1
+
+# Note: To scan external modules downloaded by 'terraform init', use environment variable:
+# CHECKOV_EXPERIMENTAL_TERRAFORM_MANAGED_MODULES=True checkov -d . --config-file .checkov.yml
+#
+# Alternative: download-external-modules: true (requires network access to Terraform Registry)
 
 # For more options: https://www.checkov.io/2.Basics/CLI%20Command%20Reference.html

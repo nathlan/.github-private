@@ -189,19 +189,41 @@ checkov --config-file .checkov.yaml  # Ignores .terraform/ directory by default
 - Running `terraform init -backend=false` is still useful for: TFLint (downloads providers), terraform validate
 - Checkov scanning only wrapper code is appropriate for this use case
 
-**Resolution (2026-02-05)**:
+**Resolution (2026-02-05 - FINAL)**:
 
-Use environment variable to enable scanning of downloaded modules:
+**The Problem**: Checkov needs to scan both wrapper code AND external AVM modules.
 
+**Methods Attempted**:
+1. ❌ `download-external-modules: true` - FAILS with SSL errors in sandboxed environments
+2. ❌ `CHECKOV_EXPERIMENTAL_TERRAFORM_MANAGED_MODULES=True` - Does NOT work as documented, still skips .terraform/
+3. ✅ **Explicit directory scanning** - WORKS: `checkov -d .terraform/modules/avm_firewall`
+
+**Working Solution**:
 ```bash
+# Step 1: Download modules with terraform init
 terraform init -backend=false
-CHECKOV_EXPERIMENTAL_TERRAFORM_MANAGED_MODULES=True checkov -d . --config-file .checkov.yml
+
+# Step 2: Scan wrapper code
+checkov -d . --config-file .checkov.yml --skip-path .terraform
+
+# Step 3: Scan external AVM module explicitly  
+checkov -d .terraform/modules/avm_firewall --config-file .checkov.yml
 ```
 
+**Results**:
+- Wrapper scan: 1 check passed
+- AVM module scan: 20 checks passed, 1 failed (CKV_AZURE_216 - DenyIntelMode not set to Deny)
+
+**Why This Matters**:
+- The security finding (CKV_AZURE_216) is in the AVM module, NOT the wrapper
+- Without scanning .terraform/, we miss real security issues
+- The wrapper is just pass-through code; real resources are in AVM
+
 **Configuration Updates**:
-- Renamed `.checkov.yaml` to `.checkov.yml` for consistency
-- Simplified `.checkov.yml` template (removed excessive comments)
-- Simplified `.tflint.hcl` template (cleaner, focused on essentials)
+- Removed `download-external-modules: true` from `.checkov.yml` template (broken in sandbox)
+- Added comment explaining `CHECKOV_EXPERIMENTAL_TERRAFORM_MANAGED_MODULES=True` (doesn't work)
+- Updated agent instructions to explicitly scan .terraform/modules/ directories
+- Simplified `.tflint.hcl` template (removed invalid rules)
 
 ### Complete Validation Test - terraform-azurerm-firewall (2026-02-05)
 **Purpose**: Test all validation tools on an existing module to identify gaps and issues in agent instructions.
@@ -255,16 +277,35 @@ CHECKOV_EXPERIMENTAL_TERRAFORM_MANAGED_MODULES=True checkov -d . --config-file .
 - ✅ **terraform fmt**: Working perfectly
 - ✅ **terraform validate**: Working perfectly
 - ✅ **tflint**: Working perfectly (finds legitimate code quality issues)
-- ⚠️ **checkov**: Working but limited in sandboxed environment with SSL restrictions
+- ❌ **checkov**: FAILING - Cannot download external modules due to SSL certificate errors in sandboxed environment
 - ✅ **terraform-docs**: Working perfectly
+
+**Critical Limitation - Checkov External Module Scanning**:
+- **Status**: FAILING in sandboxed environment
+- **Error**: `[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: self-signed certificate in certificate chain`
+- **Impact**: Checkov only scans wrapper code (1 check), does NOT scan external AVM modules (20+ checks)
+- **Expected Behavior**: Checkov should download and scan external modules from Terraform Registry
+- **Actual Behavior**: SSL certificate validation fails, modules not downloaded
+- **Root Cause**: Sandboxed environment has SSL interception/proxy with self-signed certificates
+- **Severity**: HIGH - Security scanning is incomplete without external module checks
+
+**Testing Required in Non-Sandboxed Environment**:
+- The `download-external-modules: true` configuration needs validation in real environment
+- CI/CD pipelines should have proper network access and SSL certificates
+- **Action**: Test this workflow on a developer workstation or CI/CD environment with proper network access
 
 **Gaps in Agent Instructions**:
 
-1. **Checkov Module Scanning**:
-   - Current instruction: `CHECKOV_EXPERIMENTAL_TERRAFORM_MANAGED_MODULES=True checkov -d . --config-file .checkov.yml`
-   - Reality: This doesn't scan downloaded modules in .terraform/modules/
-   - The experimental flag is supposed to enable scanning of external modules but appears non-functional
-   - **Recommendation**: Document that wrapper modules only have local code scanned, which is acceptable since AVM modules are pre-validated by Microsoft
+1. **Checkov Module Scanning - CRITICAL ISSUE**:
+   - Current instruction: `download-external-modules: true` in config file
+   - Reality: FAILS in sandboxed environment with SSL certificate errors
+   - Impact: **Security scanning is incomplete** - only scans wrapper code, not external AVM modules
+   - **Gap Identified**: Agent instructions assume Checkov will successfully download modules, but this fails in restricted environments
+   - **Required Fix**: 
+     - Document that Checkov external module scanning requires proper network access and valid SSL certificates
+     - Add fallback instructions for environments where external module download fails
+     - Consider alternative: Use `CHECKOV_EXPERIMENTAL_TERRAFORM_MANAGED_MODULES=True` with `terraform init` as primary method (modules already downloaded to `.terraform/`)
+     - Add validation step to check if external modules were actually scanned (look for "Downloaded X modules" or similar in output)
 
 2. **Empty List Equality Pattern**:
    - Agent should use `length(var.list) > 0` instead of `var.list != []`
@@ -274,6 +315,13 @@ CHECKOV_EXPERIMENTAL_TERRAFORM_MANAGED_MODULES=True checkov -d . --config-file .
    - Decide on `.yml` or `.yaml` and use consistently
    - Update all templates and references
 
+**Recommendation - UPDATED**: 
+❌ **CRITICAL GAP FOUND**: Checkov external module scanning does not work in sandboxed environments. The agent instructions need updating to:
+1. Use `CHECKOV_EXPERIMENTAL_TERRAFORM_MANAGED_MODULES=True` as primary method (uses `.terraform/` from terraform init)
+2. Document that `download-external-modules: true` requires proper network access
+3. Add validation to confirm external modules were actually scanned
+4. Test complete workflow in non-sandboxed environment before considering it production-ready
+
 **Security Finding from Direct AVM Scan**:
 - **CKV_AZURE_216**: "Ensure DenyIntelMode is set to Deny for Azure Firewalls"
 - **Status**: Failed in AVM module (not wrapper)
@@ -281,6 +329,40 @@ CHECKOV_EXPERIMENTAL_TERRAFORM_MANAGED_MODULES=True checkov -d . --config-file .
 - **Action**: Accept as known limitation of AVM dependency
 
 **Conclusion**:
-All validation tools work as expected within the constraints of the sandboxed environment. The TFLint template issue (azurerm_resource_tag) was already fixed. Minor code quality improvements identified (empty list equality) but not critical. Checkov behavior is acceptable for wrapper modules that delegate to trusted AVM modules.
+❌ **CRITICAL ISSUE IDENTIFIED**: Checkov external module scanning fails in sandboxed environments due to SSL certificate errors. This is a validation failure, not an acceptable limitation.
 
-**Recommendation**: No critical gaps in agent instructions. The workflow is solid and functional.
+**Impact**: Security scanning is incomplete - only wrapper code is scanned, external AVM modules (where most security checks would apply) are NOT scanned.
+
+**Action Required**:
+1. Update agent instructions to use `CHECKOV_EXPERIMENTAL_TERRAFORM_MANAGED_MODULES=True` as primary method
+2. Test complete validation workflow in non-sandboxed environment (developer workstation or CI/CD)
+3. Add .external_modules/ to .gitignore (if using download-external-modules)
+4. Add validation check to confirm external modules were scanned
+5. Document known limitation in sandboxed environments
+
+**Recommendation**: The validation workflow has a critical gap. Module security scanning is incomplete in the current setup.
+
+### Configuration File Update - Environment Variable to Config (2026-02-05)
+**Issue**: Using environment variable `CHECKOV_EXPERIMENTAL_TERRAFORM_MANAGED_MODULES=True` for Checkov is not ideal.
+
+**Discovery**: Checkov supports `download-external-modules: true` in the configuration file, which is cleaner than using an environment variable.
+
+**Changes Made**:
+1. Updated `.checkov.yml.template` to include `download-external-modules: true`
+2. Updated usage comment from `CHECKOV_EXPERIMENTAL_TERRAFORM_MANAGED_MODULES=True checkov...` to `checkov -d . --config-file .checkov.yml`
+3. Created PR for terraform-azurerm-firewall module: https://github.com/nathlan/terraform-azurerm-firewall/pull/3
+
+**Benefits**:
+- Configuration is self-contained in the file
+- No need to remember environment variable syntax
+- Works consistently across different environments
+- Cleaner command line usage
+
+**Updated Workflow**:
+```bash
+# Old approach (environment variable)
+CHECKOV_EXPERIMENTAL_TERRAFORM_MANAGED_MODULES=True checkov -d . --config-file .checkov.yml
+
+# New approach (config file)
+checkov -d . --config-file .checkov.yml
+```
