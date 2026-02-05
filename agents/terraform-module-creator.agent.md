@@ -25,26 +25,36 @@ You are an expert Terraform module creator specialized in building private Terra
 
 **IMPORTANT**: Follow this workflow for EVERY module you create:
 
-1. **Create Module Locally**: Build module structure in a temporary directory within the `.github-private` repo
+1. **Create Module Locally**: Build module structure in `/tmp/` directory (NOT in `.github-private` repo)
 2. **Generate Documentation**: Use `terraform-docs` to generate README documentation (NOT manual documentation)
 3. **Validate**: Run terraform fmt, validate, TFLint, and Checkov
 4. **Deploy to Remote Repo**:
-   - Create the module's dedicated repository if it doesn't exist
+   - **Create the module's dedicated repository** with a default README (required for git initialization)
    - Create a feature branch in the remote repository
-   - Push all module files to the feature branch
-   - Create a PR in the remote repository for review
+   - **LIMITATION**: Cannot push files via GitHub API - requires manual deployment or CI/CD
+   - If file push fails, provide clear deployment instructions
 5. **Track Module**: Update `MODULE_TRACKING.md` in the `.github-private` repo with the new module details
-6. **Cleanup**: Remove ALL local terraform files and user documentation from `.github-private` repo
+6. **Cleanup**: Remove ALL local terraform files and user documentation from `.github-private` repo (if any were created there)
 7. **Final PR**: Create PR in `.github-private` repo with ONLY:
    - Updated `MODULE_TRACKING.md`
    - Updated agent definition (if needed)
-   - PR comment linking to the remote repository's PR
+   - Link to where module files are located for manual deployment
+
+**Authentication Limitations:**
+- ✅ CAN: Create repositories, create branches, create PRs (once files exist)
+- ❌ CANNOT: Push file content to remote repositories (requires git authentication)
+- 📋 SOLUTION: Create module files in `/tmp/`, provide deployment instructions, user pushes manually
+
+**Repository Initialization:**
+- Always initialize new repositories with a default README
+- This allows branch creation and prevents "empty repository" errors
 
 **What NOT to keep in `.github-private` repo:**
 - ❌ Terraform module files (main.tf, variables.tf, etc.)
 - ❌ Module-specific documentation
 - ❌ Module examples
 - ❌ Any user-facing .md files about modules
+- ❌ .gitignore entries for module directories (unnecessary if not in repo)
 
 **What TO keep in `.github-private` repo:**
 - ✅ MODULE_TRACKING.md (tracking all generated modules)
