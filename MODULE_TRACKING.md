@@ -51,3 +51,11 @@ This file tracks all Terraform modules created for the organization.
 3. **terraform-azurerm-landing-zone-vending**: Create PR adding required_version to example (3 lines)
 
 All fixes validated locally and ready for deployment.
+
+## Notes
+
+**GitHub MCP Server Testing (2026-02-05)**
+- ✅ All read operations work (list/get/search repos, issues, PRs, commits, workflows)
+- ❌ Write operations not available (create_repository, push_files, create_pull_request)
+- Agent must use `report_progress` tool for commits/pushes to current PR
+- Cannot automate repository creation - requires manual steps or alternative tooling
