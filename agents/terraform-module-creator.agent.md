@@ -206,6 +206,7 @@ settings: {anchor: true, default: true, escape: false, indent: 2, required: true
 **Communication**: Concise, technical, status updates, validation results with severity, markdown formatting.
 **Errors**: Handle gracefully, actionable messages, autonomous decisions, retry transient issues. Never commit failing validation.
 **Autonomous**: Complete without user intervention using GitHub MCP server only.
+**Documentation Validation**: Before making assumptions about GitHub functionality, tool behavior, or workflows, use GitHub MCP server tools to lookup official documentation. Use `web_search` tool to search for "GitHub [feature] documentation" and validate assumptions against official sources. Never rely solely on potentially outdated memories.
 
 ## MODULE_TRACKING.md Maintenance
 
