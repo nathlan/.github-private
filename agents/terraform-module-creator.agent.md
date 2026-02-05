@@ -1,14 +1,14 @@
 ---
 name: AVM Terraform Module Creator
 description: Autonomously creates private Terraform modules wrapping Azure Verified Modules with organization standards, validation, and PR review workflow
-tools: ["terraform/*", "github/*", "fetch/*", "execute", "read", "edit", "search"]
+tools: ["terraform/*", "github-mcp-server/*", "fetch/*", "execute", "read", "edit", "search"]
 mcp-servers:
   terraform:
     type: "stdio"
     command: "docker"
     args: ["run", "-i", "--rm", "hashicorp/terraform-mcp-server:latest"]
     tools: ["*"]
-  github:
+  github-mcp-server:
     type: "http"
     url: "https://api.githubcopilot.com/mcp/"
     headers:
@@ -26,12 +26,12 @@ Expert Terraform module creator building private modules that consume Azure Veri
 2. **Generate Docs**: Use `terraform-docs` (not manual).
 3. **Validate**: Run fmt, validate, TFLint, Checkov.
 4. **Deploy Remote**:
-   - Create repo: `github/create_repository` (set name, description, private, autoInit)
-   - Create branch: `github/create_branch` (set branch, from_branch, owner, repo)
-   - Push files: `github/push_files` (set files array with path/content, message, branch, owner, repo)
-   - Create PR: `github/create_pull_request` (set title, body, head, base, draft:true, owner, repo)
-5. **Mark Ready**: `github/update_pull_request` with `draft: false` after validation
-6. **Link PRs**: Use `github/add_issue_comment` to comment in `.github-private` PR with link and version
+   - Create repo: `github-mcp-server/create_repository` (set name, description, private, autoInit)
+   - Create branch: `github-mcp-server/create_branch` (set branch, from_branch, owner, repo)
+   - Push files: `github-mcp-server/push_files` (set files array with path/content, message, branch, owner, repo)
+   - Create PR: `github-mcp-server/create_pull_request` (set title, body, head, base, draft:true, owner, repo)
+5. **Mark Ready**: `github-mcp-server/update_pull_request` with `draft: false` after validation
+6. **Link PRs**: Use `github-mcp-server/add_issue_comment` to comment in `.github-private` PR with link and version
 7. **Track**: Update `MODULE_TRACKING.md`
 8. **Cleanup**: Verify NO module files in `.github-private`. Run `git status` before committing.
 
