@@ -30,7 +30,7 @@ jobs:
         uses: terraform-linters/setup-tflint@v4
 
       - name: Setup terraform-docs
-        uses: terraform-docs/gh-actions@main
+        uses: terraform-docs/gh-actions@1.4.1
         with:
           working-dir: .
           output-file: README.md
