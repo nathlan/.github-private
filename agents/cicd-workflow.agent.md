@@ -90,7 +90,7 @@ jobs:
 - Triggers: PR, push to main, workflow_dispatch
 
 **Critical Requirements:**
-- All actions MUST be pinned to specific SHA (not tags)
+- All actions MUST use major version numbers (e.g., `uses: actions/checkout@v4`)
 - Use terraform v1.9.0+
 - Artifacts retained 30 days
 - Plan must be saved and reused in apply (prevent drift)
@@ -114,7 +114,7 @@ Create 3 docs in `docs/` directory:
 4. **Create Draft PR** - Use GitHub MCP with structured description including:
    - Purpose and scope (GitHub/Azure provider)
    - Workflows added (validation, security, plan, deploy)
-   - Security features (pinned SHAs, modern auth, Checkov)
+   - Security features (pinned versions, modern auth, Checkov)
    - Required configuration:
      - **GitHub**: Vars (`GH_CONFIG_APP_ID`, `GH_CONFIG_INSTALLATION_ID`), Secret (`GH_CONFIG_PRIVATE_KEY`), Environment (`github-admin`)
      - **Azure**: Secrets (OIDC client/tenant/subscription), Environment (`azure-production`)
@@ -133,6 +133,21 @@ Create 3 docs in `docs/` directory:
 ## Authentication Patterns
 
 **GitHub Provider (GitHub App):**
+
+Two authentication steps required:
+
+1. **Generate token for workflow operations** (PR comments, API calls):
+```yaml
+- name: Generate GitHub App Token
+  id: app-token
+  uses: actions/create-github-app-token@v1
+  with:
+    app-id: ${{ vars.GH_CONFIG_APP_ID }}
+    private-key: ${{ secrets.GH_CONFIG_PRIVATE_KEY }}
+    owner: ${{ github.repository_owner }}
+```
+
+2. **Setup Terraform provider authentication**:
 ```yaml
 - name: Setup Terraform GitHub Provider Auth
   run: |
@@ -158,12 +173,16 @@ provider "github" {
 - Secrets:
   - `GH_CONFIG_PRIVATE_KEY` - GitHub App Private Key (PEM format)
 
-Benefits: Fine-grained permissions, no token in workflow, automatic auth, audit trail
+**Usage:**
+- Use `${{ steps.app-token.outputs.token }}` for workflow Git operations and API calls
+- Terraform automatically uses environment variables for provider authentication
+
+Benefits: Fine-grained permissions, no long-lived tokens, automatic auth, audit trail
 
 **Azure Provider (OIDC):**
 ```yaml
 - name: Azure Login (OIDC)
-  uses: azure/login@<SHA> # v2.1.1
+  uses: azure/login@v2
   with:
     client-id: ${{ secrets.AZURE_CLIENT_ID }}
     tenant-id: ${{ secrets.AZURE_TENANT_ID }}
@@ -179,7 +198,7 @@ Benefits: No stored credentials, federated identity, least privilege
 - ✅ Terraform location confirmed (**repo root** `terraform/` directory)
 - ✅ All terraform steps use `working-directory: terraform`
 - ✅ Provider detected correctly (github/azurerm)
-- ✅ All actions pinned to SHA (not tags)
+- ✅ All actions use major version numbers (e.g., `@v4`, `@v2`)
 - ✅ Modern auth configured (GitHub App env vars/OIDC)
 - ✅ GitHub secrets mapped to env variables correctly
 - ✅ Checkov with `soft_fail: false`
@@ -211,7 +230,7 @@ validate → security → [cost-estimate (Azure only)] → plan → apply (appro
 ```
 
 **Key Principles:**
-1. Security-first: Pinned SHAs, modern auth, fail-fast on violations
+1. Security-first: Major version pinning, modern auth, fail-fast on violations
 2. Human oversight: Manual approval for all production deployments  
 3. Transparency: Plan output in PR comments, comprehensive docs
 4. Automation: Validate and scan on every PR
