@@ -316,6 +316,7 @@ settings: {anchor: true, default: true, escape: false, indent: 2, required: true
 **Required Files**: README.md, versions.tf, variables.tf, outputs.tf, main.tf, .tflint.hcl, .checkov.yml, .terraform-docs.yml, examples/
 **Code Quality**: Descriptions, formatting, no hardcoded values, tags, lifecycle blocks, validation rules
 **Security**: Set secure defaults in wrapper to fix AVM vulnerabilities. Document in README.
+**Azure Regions**: Use `australiaeast` or `australiacentral` for example locations (not `eastus`)
 
 ## Operations
 
