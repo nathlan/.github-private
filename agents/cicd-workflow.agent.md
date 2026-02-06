@@ -76,7 +76,7 @@ jobs:
 
 **GitHub Provider Specifics:**
 - Auth: GitHub App with environment variables (app_auth block, fine-grained perms)
-- Secrets: `GH_CONFIG_APP_ID`, `GH_CONFIG_INSTALLATION_ID`, `GH_CONFIG_PRIVATE_KEY`
+- Config: Vars (`GH_CONFIG_APP_ID`, `GH_CONFIG_INSTALLATION_ID`), Secret (`GH_CONFIG_PRIVATE_KEY`)
 - Environment: `github-admin` (approval required)
 - Drift: Daily cron `0 8 * * *` 
 - Triggers: PR, push to main, workflow_dispatch, schedule
@@ -114,7 +114,7 @@ Create 3 docs in `docs/` directory:
    - Workflows added (validation, security, plan, deploy)
    - Security features (pinned SHAs, modern auth, Checkov)
    - Required configuration:
-     - **GitHub**: Secrets (`GH_CONFIG_APP_ID`, `GH_CONFIG_INSTALLATION_ID`, `GH_CONFIG_PRIVATE_KEY`), Environment (`github-admin`)
+     - **GitHub**: Vars (`GH_CONFIG_APP_ID`, `GH_CONFIG_INSTALLATION_ID`), Secret (`GH_CONFIG_PRIVATE_KEY`), Environment (`github-admin`)
      - **Azure**: Secrets (OIDC client/tenant/subscription), Environment (`azure-production`)
    - Testing instructions
    - Pre-merge checklist
@@ -123,7 +123,7 @@ Create 3 docs in `docs/` directory:
    - What was created
    - PR link
    - Configuration steps:
-     - **GitHub**: Add 3 secrets (`GH_CONFIG_APP_ID`, `GH_CONFIG_INSTALLATION_ID`, `GH_CONFIG_PRIVATE_KEY`), create `github-admin` environment
+     - **GitHub**: Add 2 vars (`GH_CONFIG_APP_ID`, `GH_CONFIG_INSTALLATION_ID`), 1 secret (`GH_CONFIG_PRIVATE_KEY`), create `github-admin` environment
      - **Azure**: Configure OIDC federation, add secrets, create `azure-production` environment
    - Estimated setup time
    - Next actions
@@ -134,8 +134,8 @@ Create 3 docs in `docs/` directory:
 ```yaml
 - name: Setup Terraform GitHub Provider Auth
   run: |
-    echo "GITHUB_APP_ID=${{ secrets.GH_CONFIG_APP_ID }}" >> $GITHUB_ENV
-    echo "GITHUB_APP_INSTALLATION_ID=${{ secrets.GH_CONFIG_INSTALLATION_ID }}" >> $GITHUB_ENV
+    echo "GITHUB_APP_ID=${{ vars.GH_CONFIG_APP_ID }}" >> $GITHUB_ENV
+    echo "GITHUB_APP_INSTALLATION_ID=${{ vars.GH_CONFIG_INSTALLATION_ID }}" >> $GITHUB_ENV
     echo "GITHUB_APP_PEM_FILE<<EOF" >> $GITHUB_ENV
     echo "${{ secrets.GH_CONFIG_PRIVATE_KEY }}" >> $GITHUB_ENV
     echo "EOF" >> $GITHUB_ENV
@@ -149,10 +149,12 @@ provider "github" {
 }
 ```
 
-**Required GitHub Secrets:**
-- `GH_CONFIG_APP_ID` - GitHub App ID
-- `GH_CONFIG_INSTALLATION_ID` - GitHub App Installation ID
-- `GH_CONFIG_PRIVATE_KEY` - GitHub App Private Key (PEM format)
+**Required GitHub Configuration:**
+- Variables (vars):
+  - `GH_CONFIG_APP_ID` - GitHub App ID
+  - `GH_CONFIG_INSTALLATION_ID` - GitHub App Installation ID
+- Secrets:
+  - `GH_CONFIG_PRIVATE_KEY` - GitHub App Private Key (PEM format)
 
 Benefits: Fine-grained permissions, no token in workflow, automatic auth, audit trail
 
