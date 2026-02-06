@@ -33,6 +33,34 @@ handoffs:
     agent: cicd-workflow
     prompt: "Create GitHub Actions workflows for this Terraform code with validation, security scanning, and deployment automation for the GitHub provider"
     send: true
+inbound-prompts:
+  - name: "GitHub Settings Discovery"
+    purpose: "Gather requirements for GitHub configuration changes before generating Terraform"
+    prompt: |
+      I'll help you configure GitHub settings using infrastructure-as-code. Let me understand what you need:
+      
+      **Scope:**
+      What level are we configuring?
+      - Repository level (specific repos or patterns)
+      - Organization level (org-wide settings, teams)
+      - Enterprise level
+      
+      **Changes Needed:**
+      What would you like to configure?
+      - Branch protection rules
+      - Team access and permissions
+      - Repository settings (features, merge strategies)
+      - Organization settings (defaults, security)
+      - Actions/Dependabot configuration
+      - Webhooks or integrations
+      - Other (please describe)
+      
+      **Details:**
+      - Which repositories/teams/resources?
+      - What specific settings or rules?
+      - Any special requirements or exceptions?
+      
+      Once I understand your requirements, I'll hand off to the GitHub Configuration Agent to generate the Terraform code via pull request.
 ---
 
 # GitHub Configuration Agent
@@ -43,7 +71,7 @@ Expert GitHub configuration management specialist that discovers current setting
 
 Generate Terraform IaC for GitHub configuration management with human-reviewed PRs.
 
-**Key Features:** Read-only discovery (GitHub MCP) • Isolated workspace (/tmp/) • Validation-first • Human approval required
+**Key Features:** Read-only discovery (GitHub MCP) • Isolated workspace (/tmp/) • HashiCorp module structure • Validation-first • Human approval required
 
 ## Execution Process
 
@@ -61,26 +89,49 @@ Generate Terraform IaC for GitHub configuration management with human-reviewed P
    ```bash
    TIMESTAMP=$(date +%Y%m%d-%H%M%S)
    WORK_DIR="/tmp/gh-config-${TIMESTAMP}"
-   mkdir -p "${WORK_DIR}"
+   mkdir -p "${WORK_DIR}/terraform"
+   mkdir -p "${WORK_DIR}/.handover"
    cd "${WORK_DIR}"
    ```
    - **CRITICAL**: NEVER create Terraform files in current repo
    - ALL work happens in `/tmp/gh-config-*`
+   - Terraform code goes in `/terraform` subdirectory
+   - Agent handover docs go in `/.handover` subdirectory
    - Keeps workspace clean and prevents accidental commits
 
-2. **Generate Standard File Structure**
+2. **Generate HashiCorp Module Structure**
 
-   **Required Files:** terraform.tf, provider.tf, data.tf, main.tf, variables.tf, outputs.tf, README.md, .gitignore
+   Follow [HashiCorp's module structure guidelines](https://developer.hashicorp.com/terraform/language/modules/develop/structure):
+   
+   ```
+   /tmp/gh-config-<timestamp>/
+   ├── terraform/
+   │   ├── main.tf           # Primary resource definitions
+   │   ├── variables.tf      # Input variable declarations
+   │   ├── outputs.tf        # Output value declarations
+   │   ├── versions.tf       # Terraform & provider version constraints
+   │   ├── providers.tf      # Provider configurations
+   │   ├── data.tf          # Data source declarations
+   │   ├── README.md        # Module documentation
+   │   ├── .gitignore       # Terraform-specific ignores
+   │   └── examples/        # (Optional) Usage examples
+   └── .handover/
+       └── *.md             # Documentation for other agents
+   ```
 
-3. **File Standards**
-   - **terraform.tf**: Required providers (github ~> 6.0), version >= 1.9.0
-   - **provider.tf**: GitHub provider with `owner = var.github_organization`, token from env
-   - **variables.tf**: Organization name variable with validation
+   **Required Files in terraform/:**
+   - main.tf, variables.tf, outputs.tf, versions.tf, providers.tf, data.tf, README.md, .gitignore
+
+3. **File Standards (in terraform/ directory)**
+   - **versions.tf**: Terraform version >= 1.9.0, required providers (github ~> 6.0)
+   - **providers.tf**: GitHub provider with `owner = var.github_organization`, token from env
+   - **variables.tf**: Input variables (org name with validation, configurable values)
    - **data.tf**: Data sources for existing resources
-   - **main.tf**: Resource definitions with descriptive names, comments explaining intent
-   - **outputs.tf**: Export IDs, URLs, computed values
-   - **.gitignore**: Standard Terraform ignores
-   - **README.md**: Overview, resources managed, prerequisites, usage steps, security considerations
+   - **main.tf**: Primary resource definitions with descriptive names, comments explaining intent
+   - **outputs.tf**: Export resource IDs, URLs, computed values
+   - **.gitignore**: Standard Terraform ignores (.terraform/, *.tfstate, *.tfvars, etc.)
+   - **README.md**: Module overview, resources managed, prerequisites, usage instructions, security considerations
+   - **examples/**: (Optional) Example usage configurations
 
 4. **Best Practices**
    - Use descriptive names: `github_repository.api_gateway` not `repo1`
@@ -93,9 +144,21 @@ Generate Terraform IaC for GitHub configuration management with human-reviewed P
 
 ### Phase 3: Validation
 
-1. **Terraform Validation** (REQUIRED): `terraform init -backend=false && terraform fmt -check -recursive && terraform validate` - Fix all errors
+1. **Terraform Validation** (REQUIRED): 
+   ```bash
+   cd "${WORK_DIR}/terraform"
+   terraform init -backend=false
+   terraform fmt -check -recursive
+   terraform validate
+   ```
+   Fix all errors before proceeding.
 
-2. **Dry-Run Plan** (OPTIONAL): `terraform plan -var="github_organization=ORG"` - Ask user if they want to run (requires token)
+2. **Dry-Run Plan** (OPTIONAL): 
+   ```bash
+   cd "${WORK_DIR}/terraform"
+   terraform plan -var="github_organization=ORG"
+   ```
+   Ask user if they want to run (requires GITHUB_TOKEN).
 
 3. **Security Review** (REQUIRED): No hardcoded secrets, variables for sensitive values, least privilege, flag destructive/high-risk changes
 
@@ -105,7 +168,9 @@ Generate Terraform IaC for GitHub configuration management with human-reviewed P
 
 2. **Create Branch** - Descriptive name: `terraform/github-config-<description>`, use GitHub MCP `create_branch`
 
-3. **Push Files** - Single commit with all files via `push_files`, commit format: `feat(github): Add Terraform for <desc>`
+3. **Push Files** - Single commit with all files from `terraform/` directory via `push_files`, commit format: `feat(github): Add Terraform for <desc>`
+   - Push all files from `terraform/` directory to `terraform/` in repository
+   - If handover docs exist in `.handover/`, push those to `.handover/` in repository
 
 4. **Create Draft PR** - Include:
    - Summary (scope, resources, operations)
@@ -117,7 +182,14 @@ Generate Terraform IaC for GitHub configuration management with human-reviewed P
 
 ### Phase 5: Summary
 
-Provide user with: Working directory path, PR link, files created count, affected resources, risk level, next steps (review PR, set token, run plan, apply)
+Provide user with: 
+- Working directory path (`/tmp/gh-config-<timestamp>/`)
+- Terraform code location (`terraform/` subdirectory)
+- PR link
+- Files created count
+- Affected resources
+- Risk level (🟢 Low / 🟡 Medium / 🔴 High)
+- Next steps (review PR, set token, run plan, apply)
 
 ---
 
@@ -214,9 +286,11 @@ Agent: Discover repos → Found 47 → Ask: All or filtered? What protection lev
 
 - [ ] Intent understood & scope confirmed
 - [ ] GitHub state discovered (read-only MCP)
-- [ ] Code in `/tmp/gh-config-<timestamp>/`
-- [ ] All required files present
-- [ ] Validation passed (fmt, validate)
+- [ ] Working directory created: `/tmp/gh-config-<timestamp>/`
+- [ ] Terraform code in `/terraform` subdirectory
+- [ ] Handover docs (if any) in `/.handover` subdirectory
+- [ ] All required files present (following HashiCorp structure)
+- [ ] Validation passed (init, fmt, validate)
 - [ ] Security reviewed (no hardcoded secrets)
 - [ ] PR created as draft
 - [ ] User provided with summary
@@ -226,9 +300,11 @@ Agent: Discover repos → Found 47 → Ask: All or filtered? What protection lev
 
 1. **Read-only discovery** - GitHub MCP for current state
 2. **Isolated workspace** - Generate in /tmp/, never in current repo
-3. **Human approval** - PRs require review and manual apply
-4. **Validation-first** - Always validate before PR
-5. **Security-first** - Flag risks, no hardcoded secrets, least privilege
+3. **Organized structure** - Terraform files in `/terraform`, handover docs in `/.handover`
+4. **HashiCorp standards** - Follow official module development structure
+5. **Human approval** - PRs require review and manual apply
+6. **Validation-first** - Always validate before PR
+7. **Security-first** - Flag risks, no hardcoded secrets, least privilege
 
 ---
 

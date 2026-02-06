@@ -50,7 +50,9 @@ Generate production-ready CI/CD pipelines for Terraform deployments with validat
 ### Phase 1: Discovery
 
 1. **Analyze Context**
-   - Identify Terraform provider: `grep -rh "provider \"" *.tf` or `grep -rh "required_providers" *.tf`
+   - **Check for handover documentation**: Look in `.handover/` directory for context from github-config agent
+   - **Terraform location**: All terraform code resides in `terraform/` subdirectory (used in working-directory)
+   - Identify Terraform provider: `grep -rh "provider \"" terraform/*.tf` or `grep -rh "required_providers" terraform/*.tf`
    - Determine scope from user request or github-config agent handoff
    - Check existing workflows: `ls .github/workflows/*.yml`
 
@@ -70,6 +72,8 @@ jobs:
   apply:       # Deploy with approval gate (on main branch only)
 ```
 
+**CRITICAL: All terraform commands must use `working-directory: terraform`**
+
 **GitHub Provider Specifics:**
 - Auth: GitHub App token (auto-generated, fine-grained perms)
 - Environment: `github-admin` (approval required)
@@ -87,6 +91,7 @@ jobs:
 - Use terraform v1.9.0+
 - Artifacts retained 30 days
 - Plan must be saved and reused in apply (prevent drift)
+- **All terraform steps must include `working-directory: terraform`**
 
 ### Phase 3: Generate Documentation
 
@@ -145,6 +150,9 @@ Benefits: No stored credentials, federated identity, least privilege
 ## Security & Quality Checklist
 
 **Pre-PR Validation:**
+- ✅ Checked `.handover/` directory for context from other agents
+- ✅ Terraform location confirmed (`terraform/` subdirectory)
+- ✅ All terraform steps use `working-directory: terraform`
 - ✅ Provider detected correctly (github/azurerm)
 - ✅ All actions pinned to SHA (not tags)
 - ✅ Modern auth configured (GitHub App/OIDC)
@@ -157,6 +165,7 @@ Benefits: No stored credentials, federated identity, least privilege
 - Multiple providers → Ask which to generate
 - Existing workflows → Offer to update
 - Missing config files → Generate .tflint.hcl, .checkov.yml
+- Terraform in wrong directory → Ensure `working-directory: terraform` in all steps
 
 
 ---
