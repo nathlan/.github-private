@@ -6,7 +6,7 @@ This file tracks all Terraform modules created for the organization.
 
 | Module Name | Repository URL | Latest Version | Status | Description |
 |-------------|----------------|----------------|--------|-------------|
-| terraform-azurerm-resource-group | [Link](https://github.com/nathlan/terraform-azurerm-resource-group) | v1.0.0 | ✅ Production Ready | Azure Resource Group wrapper with location validation |
+| terraform-azurerm-resource-group | [Link](https://github.com/nathlan/terraform-azurerm-resource-group) | v1.0.0 → v2.0.0 | 🔄 Integration Planned | Azure Resource Group wrapper with naming integration |
 | terraform-azurerm-storage-account | [Link](https://github.com/nathlan/terraform-azurerm-storage-account) | v0.1.0 | ✅ Production Ready | Storage Account with blob submodule and secure defaults |
 | terraform-azurerm-landing-zone-vending | [Link](https://github.com/nathlan/terraform-azurerm-landing-zone-vending) | v1.0.0 → v1.0.2 | 🔄 PR Open | Subscription vending wrapper for Azure Landing Zones |
 | terraform-azurerm-firewall | [Link](https://github.com/nathlan/terraform-azurerm-firewall) | v0.1.2 → v0.1.4 | 🔄 PR Open | Azure Firewall wrapper with Australian region validation |
@@ -16,8 +16,10 @@ This file tracks all Terraform modules created for the organization.
 
 ### terraform-azurerm-resource-group
 - **AVM Source**: `Azure/avm-res-resources-resourcegroup/azurerm` ~> 0.2.2
-- **Key Features**: Location validation (australiaeast/australiacentral), resource locks, role assignments
+- **Naming Module**: `Azure/naming/azurerm` ~> 0.4.3 (planned integration)
+- **Key Features**: Location validation, resource locks, role assignments, integrated naming convention
 - **Submodules**: None
+- **Planned Enhancement**: Azure naming module integration with automatic tagging from naming context (workload, environment, business unit)
 
 ### terraform-azurerm-storage-account
 - **AVM Source**: `Azure/avm-res-storage-storageaccount/azurerm` ~> 0.2
