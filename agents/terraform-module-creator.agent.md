@@ -77,18 +77,59 @@ Expert Terraform module creator building private modules that consume Azure Veri
    ```
 6. **terraform-docs**: Run on root, submodules, and examples
 
-**Checkov Workflow**:
-1. Run terraform init to download external modules locally
-2. Scan external AVM module from `.terraform/modules/` → identify ALL failures
-3. Create traceability matrix → document EACH failure (ID, name, location, exposed?, action, fix)
-4. Categorize: Example code? Ignore. Parameter not exposed? Document in README. Parameter exposed? **MUST FIX in wrapper**
-5. Set secure defaults for all exposed parameters
-6. Verify wrapper passes with 0 failures
-7. Cross-reference: EVERY exposed external failure addressed
+**Checkov Workflow (VALIDATED - Experimental Terraform-Managed Modules)**:
 
-**CRITICAL**: Wrapper MUST pass Checkov with 0 failures AND every external security failure traced back and addressed.
+**Method**: Use experimental Checkov feature to leverage Terraform-downloaded modules
 
-**Network Issues**: If checkov fails to download modules (SSL errors, registry.terraform.io unreachable), always scan `.terraform/modules/` after `terraform init` instead. This uses locally cached modules.
+**Environment Setup**:
+```bash
+export CHECKOV_EXPERIMENTAL_TERRAFORM_MANAGED_MODULES=True
+```
+
+**Depth-First Validation Pattern**:
+1. Start at deepest module level (submodules first if they exist)
+2. Run `terraform init -backend=false` in each submodule to download external dependencies
+3. Run Checkov with experimental flag: uses already-downloaded .terraform/ modules
+4. Document external module vulnerabilities
+5. Trace up to parent/wrapper modules to verify handling
+6. Validate wrapper sets secure defaults for exposed parameters
+
+**Step-by-Step Process**:
+
+1. **Initialize Terraform** (downloads external modules to .terraform/):
+   ```bash
+   terraform init -backend=false
+   ```
+
+2. **Scan with Experimental Flag**:
+   ```bash
+   export CHECKOV_EXPERIMENTAL_TERRAFORM_MANAGED_MODULES=True
+   checkov -d . --framework terraform --skip-path .terraform --download-external-modules false --compact --quiet
+   ```
+
+3. **Create Traceability Matrix**:
+   - Document EACH failure (ID, name, location, exposed?, action, fix)
+   - Categorize: Example code? Ignore. Parameter not exposed? Document in README. Parameter exposed? **MUST FIX in wrapper**
+
+4. **Set Secure Defaults** for all exposed parameters in wrapper
+
+5. **Verify** wrapper passes with 0 failures (excluding acceptable CKV_TF_1)
+
+6. **Cross-reference**: EVERY exposed external failure addressed
+
+**Key Flags**:
+- `CHECKOV_EXPERIMENTAL_TERRAFORM_MANAGED_MODULES=True` - Uses .terraform/ folder instead of re-downloading
+- `--download-external-modules false` - Prevents download errors, uses terraform init results
+- `--skip-path .terraform` - Don't scan the cached dependencies themselves
+- `--framework terraform` - Explicit framework selection
+- `--compact --quiet` - Cleaner output
+
+**CRITICAL**:
+- Wrapper MUST pass Checkov with 0 failures (CKV_TF_1 is acceptable for registry modules)
+- Every external security failure must be traced and addressed
+- For modules with submodules, validate depth-first: submodules → parent
+
+**Network Issues**: SOLVED by experimental flag - no network calls needed after terraform init
 
 **Common Checkov Errors and Solutions**:
 
@@ -120,23 +161,28 @@ Expert Terraform module creator building private modules that consume Azure Veri
    - These are NOT security issues in the module itself
    - Only track failures in main module code, not examples/
 
-**Validated Checkov Pattern (Document Successful Commands Here)**:
+**Validated Checkov Commands (Tested and Working)**:
 ```bash
-# Step 1: Download external modules locally
+# RECOMMENDED: Experimental Terraform-Managed Modules Approach
+
+# Step 1: Set experimental flag
+export CHECKOV_EXPERIMENTAL_TERRAFORM_MANAGED_MODULES=True
+
+# Step 2: Download external modules locally (one-time per module)
 terraform init -backend=false
 
-# Step 2: Scan external AVM module from local cache
-checkov -d .terraform/modules/<module_name> --framework terraform --quiet --compact
+# Step 3: Scan wrapper module with experimental flag
+checkov -d . --framework terraform --skip-path .terraform --download-external-modules false --compact --quiet
 
-# Step 3: Scan wrapper module, excluding Terraform cache
-checkov -d . --skip-path .terraform --framework terraform --quiet --compact
-
-# Common flags:
-# --quiet: Reduce verbosity
-# --compact: Cleaner output
-# --skip-path .terraform: Don't scan downloaded dependencies
-# --config-file .checkov.yaml: Use project config
+# Result: Uses .terraform/ modules, no network downloads, fast and reliable
 ```
+
+**Why This Works**:
+- `terraform init` downloads all external modules to `.terraform/modules/`
+- Experimental flag tells Checkov to USE those downloaded modules
+- `--download-external-modules false` prevents Checkov from trying to re-download
+- No SSL errors, no network timeouts, uses local cache
+- Faster execution, more reliable results
 
 ## Repository Structure
 
