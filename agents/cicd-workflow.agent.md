@@ -73,7 +73,7 @@ jobs:
 **GitHub Provider Specifics:**
 - Auth: GitHub App token (auto-generated, fine-grained perms)
 - Environment: `github-admin` (approval required)
-- Drift: Daily cron `0 8 * * *` 
+- Drift: Daily cron `0 8 * * *`
 - Triggers: PR, push to main, workflow_dispatch, schedule
 
 **Azure Provider Specifics:**
@@ -176,7 +176,7 @@ validate → security → [cost-estimate (Azure only)] → plan → apply (appro
 
 **Key Principles:**
 1. Security-first: Pinned SHAs, modern auth, fail-fast on violations
-2. Human oversight: Manual approval for all production deployments  
+2. Human oversight: Manual approval for all production deployments
 3. Transparency: Plan output in PR comments, comprehensive docs
 4. Automation: Validate and scan on every PR
 5. Auditability: Environment protection tracks approvals
