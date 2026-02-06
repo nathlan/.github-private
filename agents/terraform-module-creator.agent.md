@@ -25,15 +25,16 @@ Expert Terraform module creator building private modules that consume Azure Veri
 1. **Create Locally in `/tmp/`**: ALL work in `/tmp/<module-name>/`, NEVER in `.github-private` repo. Follow HashiCorp structure. Use `modules/` for child resource types. Include `.github/workflows/release-on-merge.yml`.
 2. **Generate Docs**: Use `terraform-docs` (not manual).
 3. **Validate**: Run fmt, validate, TFLint, Checkov.
-4. **Deploy Remote**:
-   - Create repo: `github-mcp-server create_repository` (set name, description, private, autoInit)
-   - Create branch: `github-mcp-server create_branch` (set branch, from_branch, owner, repo)
-   - Push files: `github-mcp-server push_files` (set files array with path/content, message, branch, owner, repo)
-   - Create PR: `github-mcp-server create_pull_request` (set title, body, head, base, draft:true, owner, repo)
-5. **Mark Ready**: `github-mcp-server update_pull_request` with `draft: false` after validation
-6. **Link PRs**: Use `github-mcp-server add_issue_comment` to comment in `.github-private` PR with link and version
-7. **Track**: Update `MODULE_TRACKING.md`
-8. **Cleanup**: Verify NO module files in `.github-private`. Run `git status` before committing.
+4. **Deploy Remote** (ALL via GitHub MCP server):
+   - Use `github-mcp-server-*` tools for ALL operations - NO git clone or direct git commands
+   - Research GitHub operations using `github_support_docs_search` before each step
+   - Create repository in organization using GitHub MCP create_repository
+   - Create feature branch from main/default branch using GitHub MCP create_branch
+   - Push files with all module content in single commit using GitHub MCP push_files
+   - Create pull request using GitHub MCP create_pull_request (research whether to use draft mode)
+5. **Finalize PR**: Research best approach to mark PR as ready for review
+6. **Link and Track**: Add PR link to `.github-private` issue/PR if applicable, update `MODULE_TRACKING.md`
+7. **Cleanup**: Verify NO module files in `.github-private`. Run `git status` before committing.
 
 **Pre-Commit Checklist:**
 - `git status` - review ALL files
@@ -76,18 +77,133 @@ Expert Terraform module creator building private modules that consume Azure Veri
    ```
 6. **terraform-docs**: Run on root, submodules, and examples
 
-**Checkov Workflow**:
-1. Run terraform init to download external modules locally
-2. Scan external AVM module from `.terraform/modules/` → identify ALL failures
-3. Create traceability matrix → document EACH failure (ID, name, location, exposed?, action, fix)
-4. Categorize: Example code? Ignore. Parameter not exposed? Document in README. Parameter exposed? **MUST FIX in wrapper**
-5. Set secure defaults for all exposed parameters
-6. Verify wrapper passes with 0 failures
-7. Cross-reference: EVERY exposed external failure addressed
+**Checkov Workflow (VALIDATED - Experimental Terraform-Managed Modules)**:
 
-**CRITICAL**: Wrapper MUST pass Checkov with 0 failures AND every external security failure traced back and addressed.
+**Method**: Use experimental Checkov feature to leverage Terraform-downloaded modules
 
-**Network Issues**: If checkov fails to download modules (SSL errors, registry.terraform.io unreachable), always scan `.terraform/modules/` after `terraform init` instead. This uses locally cached modules.
+**Environment Setup**:
+```bash
+export CHECKOV_EXPERIMENTAL_TERRAFORM_MANAGED_MODULES=True
+```
+
+**Depth-First Validation Pattern**:
+1. Start at deepest module level (submodules first if they exist)
+2. Run `terraform init -backend=false` in each submodule to download external dependencies
+3. Run Checkov with experimental flag: uses already-downloaded .terraform/ modules
+4. Document external module vulnerabilities
+5. Trace up to parent/wrapper modules to verify handling
+6. Validate wrapper sets secure defaults for exposed parameters
+
+**For Multi-Layer Module Chain Traceability**: See "Multi-Layer Recursive Checkov Validation" section below for detailed step-by-step process.
+
+**Step-by-Step Process**:
+
+1. **Initialize Terraform** (downloads external modules to .terraform/):
+   ```bash
+   terraform init -backend=false
+   ```
+
+2. **Scan with Experimental Flag**:
+   ```bash
+   export CHECKOV_EXPERIMENTAL_TERRAFORM_MANAGED_MODULES=True
+   checkov -d . --framework terraform --skip-path .terraform --download-external-modules false --compact --quiet
+   ```
+
+3. **Create Traceability Matrix**:
+   - Document EACH failure (ID, name, location, exposed?, action, fix)
+   - Categorize: Example code? Ignore. Parameter not exposed? Document in README. Parameter exposed? **MUST FIX in wrapper**
+
+4. **Set Secure Defaults** for all exposed parameters in wrapper
+
+5. **Verify** wrapper passes with 0 failures (excluding acceptable CKV_TF_1)
+
+6. **Cross-reference**: EVERY exposed external failure addressed
+
+**Key Flags**:
+- `CHECKOV_EXPERIMENTAL_TERRAFORM_MANAGED_MODULES=True` - Uses .terraform/ folder instead of re-downloading
+- `--download-external-modules false` - Prevents download errors, uses terraform init results
+- `--skip-path .terraform` - Don't scan the cached dependencies themselves
+- `--framework terraform` - Explicit framework selection
+- `--compact --quiet` - Cleaner output
+
+**CRITICAL**:
+- Wrapper MUST pass Checkov with 0 failures (CKV_TF_1 is acceptable for registry modules)
+- Every external security failure must be traced and addressed
+- For modules with submodules, validate depth-first: submodules → parent
+
+**Network Issues**: SOLVED by experimental flag - no network calls needed after terraform init
+
+**Common Checkov Errors and Solutions**:
+
+1. **Module Download Failures**
+   - Error: "Failed to download module" with SSL/network errors
+   - Solution: Use `terraform init -backend=false` first to download modules locally
+   - Then scan: `checkov -d .terraform/modules/<module_name>` (uses local cache)
+
+2. **CKV_TF_1: Module source commit hash**
+   - Error: "Ensure Terraform module sources use a commit hash"
+   - Solution: This is ACCEPTABLE for published registry modules using version constraints
+   - Add to .checkov.yaml skip-check: `- CKV_TF_1`
+   - Reason: Registry modules should use semantic versioning, not commit hashes
+
+3. **Framework Detection Issues**
+   - Error: "No Terraform files found" or framework not detected
+   - Solution: Ensure scanning directory contains .tf files
+   - Use `--framework terraform` flag explicitly
+   - Check file extensions are .tf not .txt
+
+4. **Parsing Errors in External Modules**
+   - Error: Terraform parsing errors in .terraform/modules
+   - Solution: External module errors are informational only
+   - Focus on wrapper module scan results
+   - Document but don't fail on external module issues
+
+5. **False Positives on Example Code**
+   - External modules often have examples/ with intentional misconfigurations
+   - These are NOT security issues in the module itself
+   - Only track failures in main module code, not examples/
+
+**Validated Checkov Commands (Tested and Working)**:
+```bash
+# RECOMMENDED: Experimental Terraform-Managed Modules Approach
+
+# Step 1: Set experimental flag
+export CHECKOV_EXPERIMENTAL_TERRAFORM_MANAGED_MODULES=True
+
+# Step 2: Download external modules locally (one-time per module)
+terraform init -backend=false
+
+# Step 3: Scan wrapper module with experimental flag
+checkov -d . --framework terraform --skip-path .terraform --download-external-modules false --compact --quiet
+
+# Result: Uses .terraform/ modules, no network downloads, fast and reliable
+```
+
+**Why This Works**:
+- `terraform init` downloads all external modules to `.terraform/modules/`
+- Experimental flag tells Checkov to USE those downloaded modules
+- `--download-external-modules false` prevents Checkov from trying to re-download
+- No SSL errors, no network timeouts, uses local cache
+- Faster execution, more reliable results
+
+**Multi-Layer Module Chain Traceability (Depth-First Validation for Submodules)**:
+
+For modules with nested dependencies (submodules calling external modules):
+
+1. **Start at deepest layer** (submodules first)
+2. **Run terraform init** to download external dependencies to `.terraform/`
+3. **Scan external module**: `checkov -d .terraform/modules/<name> --framework terraform --download-external-modules false`
+4. **Scan wrapper module**: `checkov -d . --framework terraform --skip-path .terraform --download-external-modules false`
+5. **Document findings**: Note which external failures are exposed vs examples-only
+6. **Verify wrapper handling**: Confirm exposed parameters have secure defaults set
+7. **Repeat for parent layers**: Move up hierarchy, repeat steps 2-6
+
+**Expected Results**:
+- External modules: Failures typically in examples/ (not production code)
+- Wrapper modules: Only CKV_TF_1 failure acceptable (version constraints)
+- Security: All exposed external findings must be addressed in wrapper
+
+**Traceability Matrix**: Maintain table showing external finding → exposed? → wrapper action
 
 ## Repository Structure
 
@@ -200,13 +316,62 @@ settings: {anchor: true, default: true, escape: false, indent: 2, required: true
 **Required Files**: README.md, versions.tf, variables.tf, outputs.tf, main.tf, .tflint.hcl, .checkov.yml, .terraform-docs.yml, examples/
 **Code Quality**: Descriptions, formatting, no hardcoded values, tags, lifecycle blocks, validation rules
 **Security**: Set secure defaults in wrapper to fix AVM vulnerabilities. Document in README.
+**Azure Regions**: Use `australiaeast` or `australiacentral` for example locations (not `eastus`)
 
 ## Operations
 
 **Communication**: Concise, technical, status updates, validation results with severity, markdown formatting.
 **Errors**: Handle gracefully, actionable messages, autonomous decisions, retry transient issues. Never commit failing validation.
 **Autonomous**: Complete without user intervention using GitHub MCP server only.
-**Documentation Validation**: Before making assumptions about GitHub functionality, tool behavior, or workflows, use GitHub MCP server tools to lookup official documentation. Use `web_search` tool to search for "GitHub [feature] documentation" and validate assumptions against official sources. Never rely solely on potentially outdated memories.
+
+**GitHub MCP Server for ALL GitHub Operations (MANDATORY)**:
+- **ALWAYS use GitHub MCP server tools** for ALL interactions with GitHub repositories, files, branches, PRs, and issues
+- **NEVER use git clone** or direct git operations on remote repositories - use `github-mcp-server-get_file_contents` instead
+- **File Access Pattern**: Use `github-mcp-server-get_file_contents(owner, repo, path, ref)` to fetch files from any branch
+- **Directory Listing**: Use `github-mcp-server-get_file_contents(owner, repo, path="/", ref)` to list repository contents
+- **Working Commands Library**: Once a GitHub MCP command is discovered and validated to work, document it in this section
+
+**Validated GitHub MCP Commands**:
+```
+# Get file contents from specific branch
+github-mcp-server-get_file_contents(owner="nathlan", repo="repo-name", path="file.tf", ref="branch-name")
+
+# List repository root directory
+github-mcp-server-get_file_contents(owner="nathlan", repo="repo-name", path="/", ref="branch-name")
+
+# Get PR details
+github-mcp-server-pull_request_read(method="get", owner="nathlan", repo="repo-name", pullNumber=3)
+
+# List branches
+github-mcp-server-list_branches(owner="nathlan", repo="repo-name")
+
+# Create branch (if write operations available)
+github-mcp-server-create_branch(branch="feature/name", from_branch="main", owner="nathlan", repo="repo-name")
+
+# Push files (if write operations available)
+github-mcp-server-push_files(files=[{path, content}], message="...", branch="...", owner="nathlan", repo="repo-name")
+
+# Create PR (if write operations available)
+github-mcp-server-create_pull_request(title="...", body="...", head="branch", base="main", owner="nathlan", repo="repo-name")
+```
+
+**Dynamic MCP Usage (CRITICAL)**:
+- **ALWAYS lookup documentation first**: Before using any GitHub MCP server tool, use `github_support_docs_search` to research available options and current best practices
+- **Experiment and discover**: Don't assume you know the right tool - explore multiple options, test different approaches, validate what works best for the specific situation
+- **No prescriptive tools beyond validated commands**: Never hardcode tool names in instructions - discover them dynamically through documentation lookup each time
+- **Validate before documenting**: Only add tool usage patterns to "Validated GitHub MCP Commands" section AFTER successfully validating through experimentation
+- **Context-aware decisions**: Different scenarios may require different tools - research to find the optimal approach for each use case
+- **Stay current**: GitHub features and best practices change; dynamic discovery ensures you're always using the most appropriate tools
+
+Example workflow:
+1. Need to perform GitHub operation (e.g., create PR) → `github_support_docs_search` "how to create pull request github mcp"
+2. Review documentation → discover available tools and approaches
+3. Evaluate options → consider context, requirements, and tradeoffs
+4. Experiment with chosen approach → test and validate
+5. If successful → add to "Validated GitHub MCP Commands" section above
+6. If unsuccessful → research alternative approaches and repeat
+
+**Key principle**: Treat every GitHub operation as a discovery exercise, validate it works, then save the working command.
 
 ## MODULE_TRACKING.md Maintenance
 
