@@ -7,7 +7,7 @@ This file tracks all Terraform modules created for the organization.
 | Module Name | Repository URL | Latest Version | Status | Description |
 |-------------|----------------|----------------|--------|-------------|
 | terraform-azurerm-resource-group | [Link](https://github.com/nathlan/terraform-azurerm-resource-group) | v1.0.0 → v2.0.0 | 🔄 Integration Planned | Azure Resource Group wrapper with naming integration |
-| terraform-azurerm-storage-account | [Link](https://github.com/nathlan/terraform-azurerm-storage-account) | v0.1.0 | ✅ Production Ready | Storage Account with blob submodule and secure defaults |
+| terraform-azurerm-storage-account | [Link](https://github.com/nathlan/terraform-azurerm-storage-account) | v0.1.0 → v0.2.0 | 🔄 PR Open | Storage Account with naming integration |
 | terraform-azurerm-landing-zone-vending | [Link](https://github.com/nathlan/terraform-azurerm-landing-zone-vending) | v1.0.0 → v1.0.2 | 🔄 PR Open | Subscription vending wrapper for Azure Landing Zones |
 | terraform-azurerm-firewall | [Link](https://github.com/nathlan/terraform-azurerm-firewall) | v0.1.2 → v0.1.4 | 🔄 PR Open | Azure Firewall wrapper with Australian region validation |
 | terraform-azurerm-firewall-policy | [Link](https://github.com/nathlan/terraform-azurerm-firewall-policy) | v0.1.0 → v0.2.0 | 🔄 PR Open | Firewall Policy with rule collection groups |
@@ -22,9 +22,11 @@ This file tracks all Terraform modules created for the organization.
 - **Planned Enhancement**: Azure naming module integration with automatic tagging from naming context (workload, environment, business unit)
 
 ### terraform-azurerm-storage-account
-- **AVM Source**: `Azure/avm-res-storage-storageaccount/azurerm` ~> 0.2
-- **Key Features**: Generic parent + blob submodule with secure defaults
+- **AVM Source**: `Azure/avm-res-storage-storageaccount/azurerm` ~> 0.6.7
+- **Naming Module**: `Azure/naming/azurerm` ~> 0.4.3
+- **Key Features**: Generic parent + blob submodule, integrated naming convention, automatic tagging
 - **Submodules**: `modules/blob`
+- **PR**: [#3](https://github.com/nathlan/terraform-azurerm-storage-account/pull/3) - Integrate Azure naming module with automatic tagging
 
 ### terraform-azurerm-landing-zone-vending
 - **AVM Source**: `Azure/avm-ptn-alz-sub-vending/azure` 0.1.0
