@@ -94,6 +94,8 @@ export CHECKOV_EXPERIMENTAL_TERRAFORM_MANAGED_MODULES=True
 5. Trace up to parent/wrapper modules to verify handling
 6. Validate wrapper sets secure defaults for exposed parameters
 
+**For Multi-Layer Module Chain Traceability**: See "Multi-Layer Recursive Checkov Validation" section below for detailed step-by-step process.
+
 **Step-by-Step Process**:
 
 1. **Initialize Terraform** (downloads external modules to .terraform/):
@@ -184,76 +186,24 @@ checkov -d . --framework terraform --skip-path .terraform --download-external-mo
 - No SSL errors, no network timeouts, uses local cache
 - Faster execution, more reliable results
 
-**Validated 4-Layer Recursive Checkov Example (storage-account)**:
+**Multi-Layer Module Chain Traceability (Depth-First Validation for Submodules)**:
 
-**Test Architecture** - Validated 2026-02-06:
-```
-Layer 4 (deepest) → AVM Blob Storage (external Azure/avm-res-storage-storageaccount)
-Layer 3          → Our Blob Wrapper (modules/blob with secure defaults)
-Layer 2          → AVM Storage Account (external Azure/avm-res-storage-storageaccount)
-Layer 1 (top)    → Our Storage Wrapper (root, generic parent)
-```
+For modules with nested dependencies (submodules calling external modules):
 
-**Results**:
-- **Layer 4 (External AVM Blob):** 170 passed, 43 failed
-  - Failures in examples/ directory only (not production code)
-  - Key vault issues: example code only
-  - CKV_TF_1: Multiple (version constraints - acceptable)
+1. **Start at deepest layer** (submodules first)
+2. **Run terraform init** to download external dependencies to `.terraform/`
+3. **Scan external module**: `checkov -d .terraform/modules/<name> --framework terraform --download-external-modules false`
+4. **Scan wrapper module**: `checkov -d . --framework terraform --skip-path .terraform --download-external-modules false`
+5. **Document findings**: Note which external failures are exposed vs examples-only
+6. **Verify wrapper handling**: Confirm exposed parameters have secure defaults set
+7. **Repeat for parent layers**: Move up hierarchy, repeat steps 2-6
 
-- **Layer 3 (Blob Wrapper):** 1 passed, 1 failed
-  - Only failure: CKV_TF_1 (acceptable)
-  - Secure defaults SET:
-    - `min_tls_version = "TLS1_2"` ✅
-    - `https_traffic_only_enabled = true` ✅
-    - `public_network_access_enabled = false` ✅
-    - `blob_versioning_enabled = true` ✅
-    - `delete_retention_days = 7` ✅
+**Expected Results**:
+- External modules: Failures typically in examples/ (not production code)
+- Wrapper modules: Only CKV_TF_1 failure acceptable (version constraints)
+- Security: All exposed external findings must be addressed in wrapper
 
-- **Layer 2 (External AVM Storage):** 170 passed, 43 failed (same module as Layer 4)
-
-- **Layer 1 (Storage Wrapper):** 1 passed, 1 failed (only CKV_TF_1)
-  - Generic parent with pass-through parameters for flexibility
-
-**Security Traceability Table**:
-| External AVM Finding | Exposed to Wrapper? | Wrapper Action |
-|---------------------|---------------------|----------------|
-| Public access config | ✅ Yes | Blob wrapper sets `false` |
-| TLS version | ✅ Yes | Blob wrapper sets `TLS1_2` |
-| Blob versioning | ✅ Yes | Blob wrapper enables |
-| Delete retention | ✅ Yes | Blob wrapper sets 7 days |
-| Key Vault HSM | ❌ No | Examples only, not exposed |
-| Key expiration | ❌ No | Examples only, not exposed |
-
-**Performance Metrics**:
-- Total scan time: ~15 seconds for all 4 layers
-- Network calls: Zero (uses `.terraform/` cache)
-- Scan speed per layer: ~3 seconds
-- Reliability: 100% success with experimental flag
-
-**Key Insights**:
-1. Both wrappers use same external AVM (Azure/avm-res-storage-storageaccount ~> 0.6.7)
-2. Blob wrapper adds secure opinionated defaults
-3. Root wrapper stays generic for flexibility
-4. All external failures in examples/ directory, not production code
-5. Complete traceability from deepest external module through all layers
-
-**Commands for Multi-Layer Validation**:
-```bash
-# Set experimental flag once
-export CHECKOV_EXPERIMENTAL_TERRAFORM_MANAGED_MODULES=True
-
-# Layer 3 & 4 (Blob submodule):
-cd modules/blob
-terraform init -backend=false
-checkov -d .terraform/modules/storage_account --framework terraform --download-external-modules false
-checkov -d . --framework terraform --skip-path .terraform --download-external-modules false
-
-# Layer 1 & 2 (Root storage):
-cd ../../
-terraform init -backend=false
-checkov -d .terraform/modules/storage_account --framework terraform --download-external-modules false
-checkov -d . --framework terraform --skip-path .terraform --download-external-modules false
-```
+**Traceability Matrix**: Maintain table showing external finding → exposed? → wrapper action
 
 ## Repository Structure
 
