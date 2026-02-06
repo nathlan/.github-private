@@ -2,6 +2,26 @@
 
 This document explains how validation steps are enforced in the Terraform module creation workflow for this organization.
 
+## Quick Answer
+
+**How are validation checks enforced?**
+
+Using a **hybrid approach**:
+
+| Validation Check | Enforcement Method | Why |
+|-----------------|-------------------|-----|
+| **Trailing whitespace, line endings, YAML syntax** | ✅ **Pre-commit hooks** | Fast (<1s), no dependencies |
+| **Block .tf files in .github-private** | ✅ **`.gitignore` + Pre-commit** | Multi-layer protection |
+| **Block LICENSE/README changes** | ✅ **Pre-commit hooks** | Critical safety check |
+| **terraform fmt, validate** | ❌ **Manual** | Requires Terraform + module context |
+| **TFLint** | ❌ **Manual** | Requires plugin downloads (100MB+), slow |
+| **Checkov security scan** | ❌ **Manual** | Complex (30-120s), requires analysis |
+| **terraform-docs** | ❌ **Manual** | Requires module context |
+
+**TL;DR**: Fast/simple checks use pre-commit hooks. Complex checks (Terraform validation, security scanning) are manual because they're slow, context-dependent, and require external dependencies.
+
+---
+
 ## Overview
 
 The validation enforcement follows a **hybrid approach** that balances automation, complexity, and developer experience:
