@@ -75,7 +75,8 @@ jobs:
 **CRITICAL: All terraform commands must use `working-directory: terraform`**
 
 **GitHub Provider Specifics:**
-- Auth: GitHub App token (auto-generated, fine-grained perms)
+- Auth: GitHub App with environment variables (app_auth block, fine-grained perms)
+- Secrets: `GH_CONFIG_APP_ID`, `GH_CONFIG_INSTALLATION_ID`, `GH_CONFIG_PRIVATE_KEY`
 - Environment: `github-admin` (approval required)
 - Drift: Daily cron `0 8 * * *` 
 - Triggers: PR, push to main, workflow_dispatch, schedule
@@ -112,29 +113,48 @@ Create 3 docs in `docs/` directory:
    - Purpose and scope (GitHub/Azure provider)
    - Workflows added (validation, security, plan, deploy)
    - Security features (pinned SHAs, modern auth, Checkov)
-   - Required configuration (secrets, environments)
+   - Required configuration:
+     - **GitHub**: Secrets (`GH_CONFIG_APP_ID`, `GH_CONFIG_INSTALLATION_ID`, `GH_CONFIG_PRIVATE_KEY`), Environment (`github-admin`)
+     - **Azure**: Secrets (OIDC client/tenant/subscription), Environment (`azure-production`)
    - Testing instructions
    - Pre-merge checklist
 
 5. **User Summary** - Provide concise summary with:
    - What was created
    - PR link
-   - Configuration steps (secrets/environments)
+   - Configuration steps:
+     - **GitHub**: Add 3 secrets (`GH_CONFIG_APP_ID`, `GH_CONFIG_INSTALLATION_ID`, `GH_CONFIG_PRIVATE_KEY`), create `github-admin` environment
+     - **Azure**: Configure OIDC federation, add secrets, create `azure-production` environment
    - Estimated setup time
    - Next actions
 
 ## Authentication Patterns
 
-**GitHub Provider (GitHub App Token):**
+**GitHub Provider (GitHub App):**
 ```yaml
-- name: Generate GitHub App Token
-  uses: actions/create-github-app-token@<SHA> # v1.9.0
-  with:
-    app-id: ${{ vars.GH_CONFIG_WORKFLOW_APP_ID }}
-    private-key: ${{ secrets.GH_CONFIG_WORKFLOW_APP_PRIVATE_KEY }}
-    owner: ${{ github.repository_owner }}
+- name: Setup Terraform GitHub Provider Auth
+  run: |
+    echo "GITHUB_APP_ID=${{ secrets.GH_CONFIG_APP_ID }}" >> $GITHUB_ENV
+    echo "GITHUB_APP_INSTALLATION_ID=${{ secrets.GH_CONFIG_INSTALLATION_ID }}" >> $GITHUB_ENV
+    echo "GITHUB_APP_PEM_FILE<<EOF" >> $GITHUB_ENV
+    echo "${{ secrets.GH_CONFIG_PRIVATE_KEY }}" >> $GITHUB_ENV
+    echo "EOF" >> $GITHUB_ENV
 ```
-Benefits: Fine-grained permissions, automatic rotation, audit trail
+
+Terraform provider configuration:
+```hcl
+provider "github" {
+  owner = var.github_organization
+  app_auth {}  # Automatically uses GITHUB_APP_XXX environment variables
+}
+```
+
+**Required GitHub Secrets:**
+- `GH_CONFIG_APP_ID` - GitHub App ID
+- `GH_CONFIG_INSTALLATION_ID` - GitHub App Installation ID
+- `GH_CONFIG_PRIVATE_KEY` - GitHub App Private Key (PEM format)
+
+Benefits: Fine-grained permissions, no token in workflow, automatic auth, audit trail
 
 **Azure Provider (OIDC):**
 ```yaml
@@ -155,7 +175,8 @@ Benefits: No stored credentials, federated identity, least privilege
 - ✅ All terraform steps use `working-directory: terraform`
 - ✅ Provider detected correctly (github/azurerm)
 - ✅ All actions pinned to SHA (not tags)
-- ✅ Modern auth configured (GitHub App/OIDC)
+- ✅ Modern auth configured (GitHub App env vars/OIDC)
+- ✅ GitHub secrets mapped to env variables correctly
 - ✅ Checkov with `soft_fail: false`
 - ✅ Approval environment configured
 - ✅ Plan artifact saved and reused in apply
@@ -175,7 +196,7 @@ Benefits: No stored credentials, federated identity, least privilege
 **Provider Decision Matrix:**
 | Provider | Workflow File | Auth Method | Environment | Drift Detection | Cost Estimation |
 |----------|--------------|-------------|-------------|-----------------|-----------------|
-| `github` | `github-terraform.yml` | GitHub App token | `github-admin` | Yes (daily 8AM UTC) | No |
+| `github` | `github-terraform.yml` | GitHub App (env vars + app_auth) | `github-admin` | Yes (daily 8AM UTC) | No |
 | `azurerm` | `azure-terraform.yml` | Azure OIDC | `azure-production` | No | Yes (Infracost) |
 
 **Job Flow:**
