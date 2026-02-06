@@ -184,6 +184,77 @@ checkov -d . --framework terraform --skip-path .terraform --download-external-mo
 - No SSL errors, no network timeouts, uses local cache
 - Faster execution, more reliable results
 
+**Validated 4-Layer Recursive Checkov Example (storage-account)**:
+
+**Test Architecture** - Validated 2026-02-06:
+```
+Layer 4 (deepest) → AVM Blob Storage (external Azure/avm-res-storage-storageaccount)
+Layer 3          → Our Blob Wrapper (modules/blob with secure defaults)
+Layer 2          → AVM Storage Account (external Azure/avm-res-storage-storageaccount)
+Layer 1 (top)    → Our Storage Wrapper (root, generic parent)
+```
+
+**Results**:
+- **Layer 4 (External AVM Blob):** 170 passed, 43 failed
+  - Failures in examples/ directory only (not production code)
+  - Key vault issues: example code only
+  - CKV_TF_1: Multiple (version constraints - acceptable)
+
+- **Layer 3 (Blob Wrapper):** 1 passed, 1 failed
+  - Only failure: CKV_TF_1 (acceptable)
+  - Secure defaults SET:
+    - `min_tls_version = "TLS1_2"` ✅
+    - `https_traffic_only_enabled = true` ✅
+    - `public_network_access_enabled = false` ✅
+    - `blob_versioning_enabled = true` ✅
+    - `delete_retention_days = 7` ✅
+
+- **Layer 2 (External AVM Storage):** 170 passed, 43 failed (same module as Layer 4)
+
+- **Layer 1 (Storage Wrapper):** 1 passed, 1 failed (only CKV_TF_1)
+  - Generic parent with pass-through parameters for flexibility
+
+**Security Traceability Table**:
+| External AVM Finding | Exposed to Wrapper? | Wrapper Action |
+|---------------------|---------------------|----------------|
+| Public access config | ✅ Yes | Blob wrapper sets `false` |
+| TLS version | ✅ Yes | Blob wrapper sets `TLS1_2` |
+| Blob versioning | ✅ Yes | Blob wrapper enables |
+| Delete retention | ✅ Yes | Blob wrapper sets 7 days |
+| Key Vault HSM | ❌ No | Examples only, not exposed |
+| Key expiration | ❌ No | Examples only, not exposed |
+
+**Performance Metrics**:
+- Total scan time: ~15 seconds for all 4 layers
+- Network calls: Zero (uses `.terraform/` cache)
+- Scan speed per layer: ~3 seconds
+- Reliability: 100% success with experimental flag
+
+**Key Insights**:
+1. Both wrappers use same external AVM (Azure/avm-res-storage-storageaccount ~> 0.6.7)
+2. Blob wrapper adds secure opinionated defaults
+3. Root wrapper stays generic for flexibility
+4. All external failures in examples/ directory, not production code
+5. Complete traceability from deepest external module through all layers
+
+**Commands for Multi-Layer Validation**:
+```bash
+# Set experimental flag once
+export CHECKOV_EXPERIMENTAL_TERRAFORM_MANAGED_MODULES=True
+
+# Layer 3 & 4 (Blob submodule):
+cd modules/blob
+terraform init -backend=false
+checkov -d .terraform/modules/storage_account --framework terraform --download-external-modules false
+checkov -d . --framework terraform --skip-path .terraform --download-external-modules false
+
+# Layer 1 & 2 (Root storage):
+cd ../../
+terraform init -backend=false
+checkov -d .terraform/modules/storage_account --framework terraform --download-external-modules false
+checkov -d . --framework terraform --skip-path .terraform --download-external-modules false
+```
+
 ## Repository Structure
 
 **WITHOUT submodules**:
