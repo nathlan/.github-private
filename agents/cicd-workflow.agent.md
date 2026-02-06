@@ -50,8 +50,9 @@ Generate production-ready CI/CD pipelines for Terraform deployments with validat
 ### Phase 1: Discovery
 
 1. **Analyze Context**
-   - **Check for handover documentation**: Look in `.handover/` directory for context from github-config agent
-   - **Terraform location**: All terraform code resides in `terraform/` subdirectory (used in working-directory)
+   - **Check for handover documentation**: Look in **repo root** `.handover/` directory for context from github-config agent
+   - **IMPORTANT**: After reading handover files, delete them to keep repo clean (use `mcp_github_delete_file`)
+   - **Terraform location**: All terraform code resides in **repo root** `terraform/` directory (used in working-directory)
    - Identify Terraform provider: `grep -rh "provider \"" terraform/*.tf` or `grep -rh "required_providers" terraform/*.tf`
    - Determine scope from user request or github-config agent handoff
    - Check existing workflows: `ls .github/workflows/*.yml`
@@ -73,6 +74,7 @@ jobs:
 ```
 
 **CRITICAL: All terraform commands must use `working-directory: terraform`**
+**CRITICAL: The `terraform/` directory is at the repository root**
 
 **GitHub Provider Specifics:**
 - Auth: GitHub App with environment variables (app_auth block, fine-grained perms)
@@ -172,8 +174,9 @@ Benefits: No stored credentials, federated identity, least privilege
 ## Security & Quality Checklist
 
 **Pre-PR Validation:**
-- ✅ Checked `.handover/` directory for context from other agents
-- ✅ Terraform location confirmed (`terraform/` subdirectory)
+- ✅ Checked **repo root** `.handover/` directory for context from other agents
+- ✅ Cleaned up (deleted) handover files after reading them
+- ✅ Terraform location confirmed (**repo root** `terraform/` directory)
 - ✅ All terraform steps use `working-directory: terraform`
 - ✅ Provider detected correctly (github/azurerm)
 - ✅ All actions pinned to SHA (not tags)
@@ -188,7 +191,8 @@ Benefits: No stored credentials, federated identity, least privilege
 - Multiple providers → Ask which to generate
 - Existing workflows → Offer to update
 - Missing config files → Generate .tflint.hcl, .checkov.yml
-- Terraform in wrong directory → Ensure `working-directory: terraform` in all steps
+- Terraform in wrong directory → Ensure `working-directory: terraform` in all steps (terraform/ is at repo root)
+- Handover files not cleaned up → Delete them after reading to keep repo clean
 
 
 ---

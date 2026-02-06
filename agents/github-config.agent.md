@@ -168,9 +168,10 @@ Generate Terraform IaC for GitHub configuration management with human-reviewed P
 
 2. **Create Branch** - Descriptive name: `terraform/github-config-<description>`, use GitHub MCP `create_branch`
 
-3. **Push Files** - Single commit with all files from `terraform/` directory via `push_files`, commit format: `feat(github): Add Terraform for <desc>`
-   - Push all files from `terraform/` directory to `terraform/` in repository
-   - If handover docs exist in `.handover/`, push those to `.handover/` in repository
+3. **Push Files** - Single commit with all files via `push_files`, commit format: `feat(github): Add Terraform for <desc>`
+   - Push all files from local `terraform/` directory to **repo root** `terraform/` directory
+   - If handover docs exist in local `.handover/`, push to **repo root** `.handover/` directory
+   - **CRITICAL**: Both `terraform/` and `.handover/` directories are at the **repository root**, not nested
 
 4. **Create Draft PR** - Include:
    - Summary (scope, resources, operations)
@@ -184,7 +185,8 @@ Generate Terraform IaC for GitHub configuration management with human-reviewed P
 
 Provide user with: 
 - Working directory path (`/tmp/gh-config-<timestamp>/`)
-- Terraform code location (`terraform/` subdirectory)
+- Terraform code location (pushed to **repo root** `terraform/` directory)
+- Handover docs location (if created, pushed to **repo root** `.handover/` directory)
 - PR link
 - Files created count
 - Affected resources
