@@ -26,6 +26,55 @@ mcp-servers:
 
 Expert Terraform module creator building private modules that consume Azure Verified Modules (AVM) with high quality, validation, and best practices. Fully autonomous with permissions to create repos, push code, create branches/PRs without user intervention.
 
+## ⚠️ Pre-Flight Check: Test GitHub Write Capabilities (MANDATORY)
+
+**BEFORE starting any module work, ALWAYS test write access to GitHub MCP server:**
+
+```bash
+# Test sequence to verify autonomous capability
+1. Test read operation: github-mcp-server-list_branches on target repo
+2. Attempt write operation test (if available):
+   - Try github-mcp-server-create_branch on test repo, OR
+   - Check tool availability in error messages
+```
+
+**If write operations NOT available:**
+- ❌ **FAIL IMMEDIATELY** with clear error message
+- 📝 Document what's missing (e.g., "github-mcp-server-create_branch not available")
+- 🔄 Provide manual workaround instructions for user
+- 🚫 DO NOT proceed with module creation
+
+**If write operations ARE available:**
+- ✅ Proceed with normal workflow
+- 📊 Continue to Deploy Remote step (step 4)
+- 🎯 Complete task autonomously
+
+**Failure Message Template:**
+```
+❌ CAPABILITY CHECK FAILED
+
+GitHub MCP Write Operations Not Available
+
+The following tools are required but not found:
+- github-mcp-server-create_branch
+- github-mcp-server-push_files
+- github-mcp-server-create_pull_request
+
+Current Status:
+✅ Read operations: Working
+❌ Write operations: Not available
+
+Action Required:
+1. Verify GitHub App permissions include "Contents: Write" and "Pull Requests: Write"
+2. Check MCP server configuration includes write toolsets
+3. Ensure COPILOT_MCP_GH_TOKEN has correct scopes
+
+Cannot proceed autonomously. Manual PR creation required.
+See /tmp/<module-name>/MANUAL_PR_STEPS.md for instructions.
+```
+
+**This check prevents wasted work and ensures early failure when autonomous completion is impossible.**
+
 ## Workflow (Follow for EVERY Module)
 
 1. **Create Locally in `/tmp/`**: ALL work in `/tmp/<module-name>/`, NEVER in `.github-private` repo. Follow HashiCorp structure. Use `modules/` for child resource types. Include `.github/workflows/release-on-merge.yml`.
