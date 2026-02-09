@@ -27,6 +27,29 @@ Expert Terraform module creator building private modules that consume Azure Veri
 
 ## Workflow (Follow for EVERY Module)
 
+## Pre-Flight Check: Test GitHub Write Capabilities (MANDATORY)
+
+**BEFORE starting any module work, ALWAYS test write access to GitHub MCP server:**
+
+```bash
+# Test sequence to verify autonomous capability
+1. Test read operation: github-mcp-server-list_branches on target repo
+2. Attempt write operation test (if available):
+   - Try github-mcp-server-create_branch on test repo, OR
+   - Check tool availability in error messages
+```
+
+**If write operations NOT available:**
+- **FAIL IMMEDIATELY** with clear error message
+- Document what's missing (e.g., "github-mcp-server-create_branch not available")
+- DO NOT proceed with module creation
+
+**If write operations ARE available:**
+- Proceed with normal workflow
+- Complete task autonomously
+
+**This check prevents wasted work and ensures early failure when autonomous completion is impossible.**
+
 1. **Create Locally in `/tmp/`**: ALL work in `/tmp/<module-name>/`, NEVER in `.github-private` repo. Follow HashiCorp structure. Use `modules/` for child resource types. Include `.github/workflows/release-on-merge.yml`.
 2. **Generate Docs**: Use `terraform-docs` (not manual).
 3. **Validate**: Run fmt, validate, TFLint, Checkov.
