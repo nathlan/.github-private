@@ -46,7 +46,7 @@ handoffs:
     agent: github-config
     prompt: |
       Generate Terraform for the following GitHub configuration:
-      
+
       Scope: Organization
       Resources: All repositories matching 'api-*'
       Configuration: Branch protection with 2 required reviews
