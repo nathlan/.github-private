@@ -1,7 +1,7 @@
 ---
 name: AVM Terraform Module Creator
 description: Autonomously creates private Terraform modules wrapping Azure Verified Modules with organization standards, validation, and PR review workflow
-tools: ['execute', 'read', 'agent', 'edit', 'search', 'hashicorp-terraform-mcp-server/*', 'fetch/*', 'azure-mcp/azureterraformbestpractices', 'azure-mcp/cloudarchitect', 'azure-mcp/documentation', 'azure-mcp/get_bestpractices', 'azure-mcp/search', 'github-mcp-server/*']
+tools: ['vscode', 'execute', 'read', 'edit', 'search', 'web', 'hashicorp-terraform-mcp-server/*', 'azure-mcp/azureterraformbestpractices', 'azure-mcp/cloudarchitect', 'azure-mcp/documentation', 'azure-mcp/get_bestpractices', 'azure-mcp/search', 'fetch/*', 'github/*', 'todo']
 mcp-servers:
   hashicorp-terraform-mcp-server:
     type: "stdio"
