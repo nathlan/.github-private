@@ -49,6 +49,8 @@
     }
   },
 
+  "remoteUser": "vscode",
+
   "remoteEnv": {
     "TF_PLUGIN_CACHE_DIR": "${containerWorkspaceFolder}/.terraform.d/plugin-cache"
   },
