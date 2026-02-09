@@ -74,7 +74,7 @@ jobs:
 - Auth: GitHub App with environment variables (app_auth block, fine-grained perms)
 - Config: Vars (`GH_CONFIG_APP_ID`, `GH_CONFIG_INSTALLATION_ID`), Secret (`GH_CONFIG_PRIVATE_KEY`)
 - Environment: `github-admin` (approval required)
-- Drift: Daily cron `0 8 * * *` 
+- Drift: Daily cron `0 8 * * *`
 - Triggers: PR, push to main, workflow_dispatch, schedule
 
 **Azure Provider Specifics:**
@@ -225,7 +225,7 @@ validate → security → [cost-estimate (Azure only)] → plan → apply (appro
 
 **Key Principles:**
 1. Security-first: Major version pinning, modern auth, fail-fast on violations
-2. Human oversight: Manual approval for all production deployments  
+2. Human oversight: Manual approval for all production deployments
 3. Transparency: Plan output in PR comments, comprehensive docs
 4. Automation: Validate and scan on every PR
 5. Auditability: Environment protection tracks approvals
