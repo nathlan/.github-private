@@ -8,7 +8,7 @@ This file tracks all Terraform modules created for the organization.
 |-------------|----------------|----------------|--------|-------------|
 | terraform-azurerm-resource-group | [Link](https://github.com/nathlan/terraform-azurerm-resource-group) | v1.0.0 → v2.0.0 | 🔄 PR Open | Azure Resource Group with naming integration |
 | terraform-azurerm-storage-account | [Link](https://github.com/nathlan/terraform-azurerm-storage-account) | v0.1.0 → v0.2.0 | 🔄 PR Open | Storage Account with naming integration |
-| terraform-azurerm-landing-zone-vending | [Link](https://github.com/nathlan/terraform-azurerm-landing-zone-vending) | v1.0.2 → v1.1.0 | 🔄 Enhancement Ready | ALZ subscription vending with UMI & budgets |
+| terraform-azurerm-landing-zone-vending | [Link](https://github.com/nathlan/terraform-azurerm-landing-zone-vending) | v1.0.2 → v1.1.0 | ⚠️ Files Ready | ALZ subscription vending - UMI & budgets ready for push |
 | terraform-azurerm-firewall | [Link](https://github.com/nathlan/terraform-azurerm-firewall) | v0.1.2 → v0.1.4 | 🔄 PR Open | Azure Firewall wrapper with Australian region validation |
 | terraform-azurerm-firewall-policy | [Link](https://github.com/nathlan/terraform-azurerm-firewall-policy) | v0.1.0 → v0.2.0 | 🔄 PR Open | Firewall Policy with rule collection groups |
 
@@ -32,9 +32,10 @@ This file tracks all Terraform modules created for the organization.
 - **AVM Source**: `Azure/avm-ptn-alz-sub-vending/azure` 0.1.0
 - **Key Features**: Subscription vending, virtual networks, User Managed Identity with GitHub OIDC, budget monitoring
 - **Submodules**: None
-- **Latest**: Enhancement ready for UMI and budget pass-through support
-- **PR #3**: Add terraform version constraint (merged)
-- **Next PR**: Add UMI and budget pass-through variables (files ready in /tmp/)
+- **Latest**: v1.0.2 (PR #3 merged - terraform version constraint)
+- **Status**: ⚠️ Enhancement files ready in /tmp/ - AWAITING MANUAL PUSH
+- **Next**: Create PR in external repo with UMI and budget support (files ready at /tmp/lz-vending-repo/)
+- **Instructions**: See /tmp/PUSH_INSTRUCTIONS.md for detailed steps to push changes
 
 ### terraform-azurerm-firewall
 - **AVM Source**: `Azure/avm-res-network-azurefirewall/azurerm` ~> 0.4.0

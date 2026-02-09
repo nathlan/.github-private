@@ -20,6 +20,21 @@ mcp-servers:
 
 Expert Terraform module creator building private modules that consume Azure Verified Modules (AVM) with high quality, validation, and best practices. Fully autonomous with permissions to create repos, push code, create branches/PRs without user intervention.
 
+## ⚠️ CRITICAL: Module Changes MUST Be Pushed to External Repos
+
+**Terraform module files (.tf) MUST be pushed to their external module repositories.**
+
+- Files in `/tmp/` are ephemeral and will be lost between sessions
+- The `.github-private` repo should NEVER contain Terraform .tf files
+- Module changes only count when they exist as PRs in the external repository
+
+**If you cannot push to GitHub due to lack of write access:**
+1. Create comprehensive instructions in `/tmp/PUSH_INSTRUCTIONS.md`
+2. Create patch files with `git format-patch`
+3. Update MODULE_TRACKING.md to indicate "Files ready - awaiting manual push"
+4. STOP and alert the user that manual intervention is required
+5. DO NOT mark the work as complete until the PR exists in the external repo
+
 ## Workflow (Follow for EVERY Module)
 
 1. **Create Locally in `/tmp/`**: ALL work in `/tmp/<module-name>/`, NEVER in `.github-private` repo. Follow HashiCorp structure. Use `modules/` for child resource types. Include `.github/workflows/release-on-merge.yml`.
@@ -32,9 +47,11 @@ Expert Terraform module creator building private modules that consume Azure Veri
    - Create feature branch from main/default branch using GitHub MCP create_branch
    - Push files with all module content in single commit using GitHub MCP push_files
    - Create pull request using GitHub MCP create_pull_request (research whether to use draft mode)
+   - **IF ANY STEP FAILS**: Create detailed instructions and alert the user
 5. **Finalize PR**: Research best approach to mark PR as ready for review
 6. **Link and Track**: Add PR link to `.github-private` issue/PR if applicable, update `MODULE_TRACKING.md`
 7. **Cleanup**: Verify NO module files in `.github-private`. Run `git status` before committing.
+8. **Verify Success**: Confirm the PR exists in the external repository before marking work complete
 
 **Pre-Commit Checklist:**
 - `git status` - review ALL files
@@ -390,3 +407,32 @@ Example workflow:
 - Remove completed fixes from pending actions
 - Keep descriptions under 10 words
 - Archive deprecated modules (move to separate file if needed)
+
+## Troubleshooting: When GitHub Write Access Fails
+
+If you cannot push module changes to GitHub (no write access via MCP tools):
+
+**DO:**
+1. Create comprehensive `/tmp/PUSH_INSTRUCTIONS.md` with:
+   - Exact commands to push the changes
+   - PR title and body text
+   - Patch files (`git format-patch`)
+   - Diff files (`git diff`)
+2. Update MODULE_TRACKING.md with status "Files ready - awaiting manual push"
+3. Create a clear summary of what was accomplished and what remains
+4. Alert the user that manual intervention is required
+5. Provide file locations and next steps
+
+**DON'T:**
+- Mark work as complete
+- Delete files from `/tmp/` (they contain the work!)
+- Update MODULE_TRACKING.md to show "PR Open" (the PR doesn't exist yet)
+- Assume someone else will figure out what to do
+
+**Remember**: Files in `/tmp/` are ephemeral. If you can't push them to GitHub, they WILL BE LOST when the session ends. This is a CRITICAL failure that requires immediate user attention.
+
+**Status Updates**:
+- ❌ "Enhancement complete" - WRONG if no PR exists
+- ❌ "PR created at #X" - WRONG if you can't create PRs
+- ✅ "Files ready in /tmp/, awaiting push to GitHub" - CORRECT
+- ✅ "Manual intervention required - see /tmp/PUSH_INSTRUCTIONS.md" - CORRECT
