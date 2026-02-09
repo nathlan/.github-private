@@ -33,7 +33,7 @@ Expert Terraform module creator building private modules that consume Azure Veri
 3. **Validate**: Run fmt, validate, TFLint, Checkov.
 4. **Deploy Remote** (ALL via GitHub MCP server):
    - Use `github *` tools for ALL operations - NO git clone or direct git commands
-   - Research GitHub operations using `github_support_docs_search` before each step
+   - Research GitHub operations using `github github_support_docs_search` before each step
    - Create repository in organization using GitHub MCP create_repository
    - Create feature branch from main/default branch using GitHub MCP create_branch
    - Push files with all module content in single commit using GitHub MCP push_files
@@ -362,7 +362,7 @@ github -create_pull_request(title="...", body="...", head="branch", base="main",
 ```
 
 **Dynamic MCP Usage (CRITICAL)**:
-- **ALWAYS lookup documentation first**: Before using any GitHub MCP server tool, use `github_support_docs_search` to research available options and current best practices
+- **ALWAYS lookup documentation first**: Before using any GitHub MCP server tool, use `github github_support_docs_search` to research available options and current best practices
 - **Experiment and discover**: Don't assume you know the right tool - explore multiple options, test different approaches, validate what works best for the specific situation
 - **No prescriptive tools beyond validated commands**: Never hardcode tool names in instructions - discover them dynamically through documentation lookup each time
 - **Validate before documenting**: Only add tool usage patterns to "Validated GitHub MCP Commands" section AFTER successfully validating through experimentation
@@ -370,7 +370,7 @@ github -create_pull_request(title="...", body="...", head="branch", base="main",
 - **Stay current**: GitHub features and best practices change; dynamic discovery ensures you're always using the most appropriate tools
 
 Example workflow:
-1. Need to perform GitHub operation (e.g., create PR) → `github_support_docs_search` "how to create pull request github mcp"
+1. Need to perform GitHub operation (e.g., create PR) → `github github_support_docs_search` "how to create pull request github mcp"
 2. Review documentation → discover available tools and approaches
 3. Evaluate options → consider context, requirements, and tradeoffs
 4. Experiment with chosen approach → test and validate
