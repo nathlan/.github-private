@@ -17,7 +17,7 @@
 ### Token Permissions Required
 
 - `repo` - Repository management
-- `admin:org` - Organization management  
+- `admin:org` - Organization management
 - `admin:enterprise` - Enterprise management (if applicable)
 
 ## Usage

@@ -33,13 +33,13 @@ inbound-prompts:
     purpose: "Gather requirements for GitHub configuration changes before generating Terraform"
     prompt: |
       I'll help you configure GitHub settings using infrastructure-as-code. Let me understand what you need:
-      
+
       **Scope:**
       What level are we configuring?
       - Repository level (specific repos or patterns)
       - Organization level (org-wide settings, teams)
       - Enterprise level
-      
+
       **Changes Needed:**
       What would you like to configure?
       - Branch protection rules
@@ -49,12 +49,12 @@ inbound-prompts:
       - Actions/Dependabot configuration
       - Webhooks or integrations
       - Other (please describe)
-      
+
       **Details:**
       - Which repositories/teams/resources?
       - What specific settings or rules?
       - Any special requirements or exceptions?
-      
+
       Once I understand your requirements, I'll hand off to the GitHub Configuration Agent to generate the Terraform code via pull request.
 ---
 
@@ -97,7 +97,7 @@ Generate Terraform IaC for GitHub configuration management with human-reviewed P
 2. **Generate HashiCorp Module Structure**
 
    Follow [HashiCorp's module structure guidelines](https://developer.hashicorp.com/terraform/language/modules/develop/structure):
-   
+
    ```
    /tmp/gh-config-<timestamp>/
    ├── terraform/
@@ -139,7 +139,7 @@ Generate Terraform IaC for GitHub configuration management with human-reviewed P
 
 ### Phase 3: Validation
 
-1. **Terraform Validation** (REQUIRED): 
+1. **Terraform Validation** (REQUIRED):
    ```bash
    cd "${WORK_DIR}/terraform"
    terraform init -backend=false
@@ -148,7 +148,7 @@ Generate Terraform IaC for GitHub configuration management with human-reviewed P
    ```
    Fix all errors before proceeding.
 
-2. **Dry-Run Plan** (OPTIONAL): 
+2. **Dry-Run Plan** (OPTIONAL):
    ```bash
    cd "${WORK_DIR}/terraform"
    terraform plan -var="github_organization=ORG"
@@ -178,7 +178,7 @@ Generate Terraform IaC for GitHub configuration management with human-reviewed P
 
 ### Phase 5: Summary
 
-Provide user with: 
+Provide user with:
 - Working directory path (`/tmp/gh-config-<timestamp>/`)
 - Terraform code location (pushed to **repo root** `terraform/` directory)
 - Handover docs location (if created, pushed to **repo root** `.handover/` directory)
