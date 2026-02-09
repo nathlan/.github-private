@@ -1,0 +1,204 @@
+name: Example Azure Terraform Deployment (Child Workflow)
+
+# ============================================================================
+# CHILD WORKFLOW EXAMPLE
+# ============================================================================
+#
+# This workflow demonstrates how to use the parent reusable workflow for
+# Azure Terraform deployments. Teams using the ALZ vending system should
+# copy this pattern to their own repositories.
+#
+# USAGE:
+# 1. Copy this file to your repository's .github/workflows/ directory
+# 2. Rename it (e.g., terraform-deploy.yml)
+# 3. Update the inputs to match your environment
+# 4. Configure the required secrets in your repository settings
+# 5. Create the environment with approval requirements
+#
+# ============================================================================
+
+on:
+  # Trigger on pushes to main branch (after PR merge)
+  push:
+    branches:
+      - main
+    paths:
+      - 'terraform/**'
+      - '.github/workflows/example-azure-terraform-child.yml'
+
+  # Trigger on pull requests to main (for plan validation)
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'terraform/**'
+      - '.github/workflows/example-azure-terraform-child.yml'
+
+  # Allow manual triggering for testing and emergency deployments
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Override environment for deployment'
+        required: false
+        type: choice
+        options:
+          - production
+          - staging
+          - development
+        default: 'production'
+
+permissions:
+  contents: read
+  pull-requests: write
+  id-token: write
+  issues: write
+
+jobs:
+  # ============================================================================
+  # Call the parent reusable workflow
+  # ============================================================================
+  deploy:
+    name: Deploy to Azure
+    # Reference the parent reusable workflow in the central repository
+    # Format: {owner}/{repo}/.github/workflows/{filename}@{ref}
+    uses: nathlan/.github-workflows/.github/workflows/azure-terraform-deploy.yml@main
+
+    with:
+      # REQUIRED: Specify the deployment environment
+      # This should match an environment configured in your repository settings
+      # with appropriate approval requirements
+      environment: ${{ inputs.environment || 'production' }}
+
+      # OPTIONAL: Override Terraform version (default: 1.9.0)
+      terraform-version: '1.9.0'
+
+      # OPTIONAL: Override working directory (default: terraform)
+      # This should point to the directory containing your Terraform code
+      working-directory: 'terraform'
+
+      # OPTIONAL: Override Azure region (default: uksouth)
+      azure-region: 'uksouth'
+
+    secrets:
+      # REQUIRED: Azure OIDC credentials
+      # These must be configured as secrets in your repository settings
+      # See documentation below for setup instructions
+      AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+      AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+      AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+# ============================================================================
+# CONFIGURATION REQUIRED
+# ============================================================================
+#
+# Before this workflow can run successfully, you must configure:
+#
+# 1. AZURE OIDC FEDERATION
+#    - Create an Azure AD App Registration
+#    - Configure federated credentials for GitHub Actions
+#    - Grant appropriate permissions to the service principal
+#
+#    Azure CLI commands:
+#    ```bash
+#    # Create service principal
+#    az ad sp create-for-rbac --name "github-actions-terraform" \
+#      --role contributor \
+#      --scopes /subscriptions/{subscription-id}
+#
+#    # Add federated credential
+#    az ad app federated-credential create \
+#      --id {app-id} \
+#      --parameters '{
+#        "name": "github-actions",
+#        "issuer": "https://token.actions.githubusercontent.com",
+#        "subject": "repo:{org}/{repo}:ref:refs/heads/main",
+#        "audiences": ["api://AzureADTokenExchange"]
+#      }'
+#    ```
+#
+# 2. REPOSITORY SECRETS (Settings → Secrets and variables → Actions)
+#    - AZURE_CLIENT_ID: The Application (client) ID from your App Registration
+#    - AZURE_TENANT_ID: Your Azure AD Tenant ID
+#    - AZURE_SUBSCRIPTION_ID: Your Azure Subscription ID
+#
+# 3. ENVIRONMENT PROTECTION (Settings → Environments → production)
+#    - Create an environment named "production" (or match the input)
+#    - Enable "Required reviewers" and add approvers
+#    - Optionally add deployment branches rule (e.g., only main)
+#    - Optionally add wait timer for additional safety
+#
+# 4. TERRAFORM BACKEND (In your terraform/ directory)
+#    Configure remote state backend in your Terraform code:
+#    ```hcl
+#    terraform {
+#      backend "azurerm" {
+#        resource_group_name  = "terraform-state-rg"
+#        storage_account_name = "tfstate12345"
+#        container_name       = "tfstate"
+#        key                  = "production.terraform.tfstate"
+#        use_oidc            = true
+#      }
+#    }
+#    ```
+#
+# ============================================================================
+# WORKFLOW BEHAVIOR
+# ============================================================================
+#
+# Pull Requests:
+# - Runs validate, security scan, and plan jobs
+# - Posts plan output as PR comment
+# - Does NOT apply changes (apply job is skipped)
+#
+# Push to main (after PR merge):
+# - Runs validate, security scan, and plan jobs
+# - Runs apply job with environment approval gate
+# - Requires manual approval before applying changes
+#
+# Manual workflow_dispatch:
+# - Allows selecting environment via dropdown
+# - Follows same flow as push to main
+# - Useful for testing or emergency deployments
+#
+# ============================================================================
+# SECURITY FEATURES
+# ============================================================================
+#
+# ✅ No stored credentials (OIDC authentication)
+# ✅ Pinned action versions for supply chain security
+# ✅ Security scanning with Checkov (fails on violations)
+# ✅ Code quality checks with TFLint
+# ✅ Manual approval required for deployments
+# ✅ Plan artifact saved and reused (prevents drift)
+# ✅ Comprehensive audit trail via environment protection
+#
+# ============================================================================
+# TROUBLESHOOTING
+# ============================================================================
+#
+# Common issues:
+#
+# 1. "Error: OIDC token exchange failed"
+#    - Verify federated credential is configured correctly
+#    - Check that subject matches: repo:{org}/{repo}:ref:refs/heads/main
+#    - Ensure audiences includes: api://AzureADTokenExchange
+#
+# 2. "Error: Backend initialization failed"
+#    - Verify storage account exists and is accessible
+#    - Check that service principal has Storage Blob Data Contributor role
+#    - Ensure use_oidc = true is set in backend configuration
+#
+# 3. "Error: Insufficient permissions"
+#    - Verify service principal has Contributor role (or appropriate permissions)
+#    - Check that the scope includes the target subscription/resource group
+#
+# 4. "Workflow fails at apply step"
+#    - Check that environment name matches between workflow and repository settings
+#    - Verify required reviewers are configured on the environment
+#    - Ensure plan artifact was successfully created in previous jobs
+#
+# For more help, see documentation at:
+# - Azure OIDC: https://docs.microsoft.com/azure/developer/github/connect-from-azure
+# - GitHub Environments: https://docs.github.com/actions/deployment/targeting-different-environments
+#
+# ============================================================================
