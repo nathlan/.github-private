@@ -2,13 +2,7 @@
 name: CI/CD Workflow Agent
 description: Generates GitHub Actions workflows for Terraform deployments with validation, security scanning, and automated deployment to GitHub or Azure
 tools:
-  - read
-  - edit
-  - search
-  - shell
-  - github-mcp-server/*
-  - terraform/*
-  - fetch/*
+  ['execute', 'read', 'agent', 'edit', 'search', 'fetch/*', 'github/*', 'azure-mcp/search']
 mcp-servers:
   terraform:
     type: stdio

@@ -2,12 +2,7 @@
 name: GitHub Configuration Agent
 description: Discovers GitHub settings and generates Terraform code to manage configuration via pull requests
 tools:
-  - read
-  - edit
-  - search
-  - shell
-  - terraform/*
-  - github-mcp-server/*
+  ['execute', 'read', 'agent', 'edit', 'search', 'github/*', 'azure-mcp/search']
 agents: ["cicd-workflow"]
 mcp-servers:
   terraform:
