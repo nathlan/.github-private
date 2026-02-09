@@ -1,8 +1,10 @@
 # ALZ Infrastructure Repositories - Setup Guide
 
-**Status:** ✅ Repository Structure Prepared | ⏳ Awaiting Repository Creation
+**Status:** ✅ Repository Structure Prepared | ✅ Reusable Workflows Available | ⏳ Awaiting Repository Creation
 
-This guide documents the complete repository setup required for the ALZ vending orchestrator. All necessary files have been prepared in `/tmp/alz-subscriptions-setup/` and are ready to be pushed to GitHub.
+**NEW:** The reusable Azure Terraform workflow has been created and is ready to deploy to the `.github-workflows` repository!
+
+This guide documents the complete repository setup required for the ALZ vending orchestrator. All necessary files have been prepared in `/tmp/alz-subscriptions-setup/` and the reusable workflow is available in `.github/workflows/azure-terraform-deploy-reusable.yml`.
 
 ---
 
@@ -223,21 +225,27 @@ gh api /repos/nathlan/alz-subscriptions/contents | jq -r '.[].name'
 
 Reusable GitHub Actions workflows for Terraform deployments. Provides consistent CI/CD patterns across all workload repositories.
 
-### Required Files
+### ✅ NEW: Workflows Ready!
+
+The reusable Azure Terraform workflow has been created by the CI/CD workflow agent and merged to the main branch!
+
+**Available workflow:**
+- `azure-terraform-deploy-reusable.yml` - Complete reusable workflow for Azure Terraform deployments
+
+**Location in this repo:**
+`.github/workflows/azure-terraform-deploy-reusable.yml`
+
+### Required Repository Structure
 
 ```
 nathlan/.github-workflows/
 ├── .github/
 │   └── workflows/
-│       ├── azure-terraform-deploy.yml      # Reusable Azure workflow
-│       └── github-terraform-deploy.yml     # Reusable GitHub workflow
-├── README.md                               # Workflow documentation
-└── docs/
-    ├── USAGE.md                           # How to call workflows
-    └── PARAMETERS.md                      # Input/secret parameters
+│       └── azure-terraform-deploy.yml      # Reusable Azure workflow (from this repo)
+└── README.md                               # Workflow documentation
 ```
 
-### Quick Setup
+### Quick Setup - Method 1: Using Prepared Workflow
 
 ```bash
 # 1. Create repository
@@ -247,29 +255,90 @@ gh repo create nathlan/.github-workflows \
   --enable-issues \
   --enable-wiki=false
 
-# 2. Note: Files need to be created (can be done later or by CI/CD workflow agent)
+# 2. Clone and set up
+cd /tmp
+git clone https://github.com/nathlan/.github-workflows.git
+cd .github-workflows
+
+# 3. Create directory structure
+mkdir -p .github/workflows
+
+# 4. Copy the reusable workflow from this repo
+# Note: You'll need to copy from the .github-private repo
+cp /path/to/.github-private/.github/workflows/azure-terraform-deploy-reusable.yml \
+   .github/workflows/azure-terraform-deploy.yml
+
+# 5. Create README
+cat > README.md << 'EOF'
+# Reusable GitHub Actions Workflows
+
+This repository contains reusable GitHub Actions workflows for Terraform deployments across the organization.
+
+## Available Workflows
+
+### Azure Terraform Deploy
+
+**File:** `.github/workflows/azure-terraform-deploy.yml`
+
+**Purpose:** Reusable workflow for Azure Terraform deployments with OIDC authentication, security scanning, and approval gates.
+
+**Usage:**
+```yaml
+jobs:
+  deploy:
+    uses: nathlan/.github-workflows/.github/workflows/azure-terraform-deploy.yml@main
+    with:
+      environment: production
+      terraform-version: '1.9.0'
+      working-directory: terraform
+      azure-region: uksouth
+    secrets:
+      AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+      AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+      AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 ```
 
-### Content Generation
+**Features:**
+- Azure OIDC authentication (no stored credentials)
+- Security scanning with Checkov (fails on violations)
+- TFLint validation
+- Plan artifact reuse (prevents drift)
+- Environment protection with approvals
+- Comprehensive PR comments
 
-The CI/CD workflow agent can generate the reusable workflows. To do this:
+## Documentation
 
-1. Create the empty repository as shown above
-2. Invoke the CI/CD workflow agent:
-   ```
-   @cicd-workflow
-   Create reusable GitHub Actions workflows for Azure and GitHub provider Terraform deployments.
-   Repository: nathlan/.github-workflows
+For detailed usage instructions, see the workflow file comments and the example-azure-terraform-child.yml in the .github-private repository.
+EOF
 
-   Requirements:
-   - azure-terraform-deploy.yml: OIDC auth, plan/apply jobs, approval gates
-   - github-terraform-deploy.yml: GitHub App auth, drift detection
-   - Include comprehensive documentation
-   ```
+# 6. Commit and push
+git add .
+git commit -m "Initial commit: Add reusable Azure Terraform workflow
 
-### Alternative: Manual Creation
+- Copied azure-terraform-deploy-reusable.yml from .github-private repo
+- Renamed to azure-terraform-deploy.yml for use as reusable workflow
+- Added README with usage documentation"
+git push origin main
+```
 
-If you prefer to create the workflows manually, use the templates from the CI/CD workflow agent's test results (available in previous session artifacts at `/tmp/capability-test/`).
+### Quick Setup - Method 2: Direct File Creation
+
+If you're setting this up through the GitHub UI or prefer to manually create files:
+
+1. Create the repository `nathlan/.github-workflows` (internal visibility)
+2. Create directory `.github/workflows/`
+3. Copy content from `.github-private/.github/workflows/azure-terraform-deploy-reusable.yml`
+4. Save as `.github/workflows/azure-terraform-deploy.yml` in the new repo
+5. Commit to main branch
+
+### Validation
+
+After setup, verify the workflow is callable:
+
+```bash
+# From any repository, reference it in a workflow:
+uses: nathlan/.github-workflows/.github/workflows/azure-terraform-deploy.yml@main
+```
 
 ---
 
@@ -403,25 +472,28 @@ workload_description: Test workload for ALZ orchestrator validation
 - ✅ GitHub Actions workflows (plan on PR, apply on merge)
 - ✅ Example landing zones (prod and dev)
 - ✅ Complete documentation
+- ✅ **NEW:** Reusable Azure Terraform workflow ready for `.github-workflows` repo
 
 ### What's Needed
 
 1. **Create `nathlan/alz-subscriptions` repository** (use Method 1, 2, or 3 above)
 2. **Push prepared files from `/tmp/alz-subscriptions-setup/`**
-3. **Configure repository secrets** (Azure OIDC credentials)
-4. **Set up branch protection** (require PR review, status checks)
-5. **Create `nathlan/.github-workflows` repository** (optional but recommended)
+3. **Create `nathlan/.github-workflows` repository** (use documented method with prepared workflow)
+4. **Configure repository secrets** (Azure OIDC credentials)
+5. **Set up branch protection** (require PR review, status checks)
 6. **Update Azure configuration values** in `agents/alz-vending.agent.md`
 
 ### Time Estimates
 
-- Repository creation and file push: 10-15 minutes
+- Repository creation and file push (alz-subscriptions): 10-15 minutes
+- Repository creation and workflow deployment (.github-workflows): 10-15 minutes
 - Secret and protection configuration: 10-15 minutes
-- Reusable workflows repository: 30-60 minutes (or delegate to CI/CD agent)
-- **Total:** 1-2 hours for complete setup
+- **Total:** 30-45 minutes for complete setup (faster with prepared workflow!)
 
 ---
 
 **Files Location:** `/tmp/alz-subscriptions-setup/`
+**Reusable Workflow:** `.github/workflows/azure-terraform-deploy-reusable.yml`
 **Guide Created:** 2026-02-09
+**Guide Updated:** 2026-02-09 (added reusable workflow instructions)
 **Ready to Deploy:** ✅ Yes
