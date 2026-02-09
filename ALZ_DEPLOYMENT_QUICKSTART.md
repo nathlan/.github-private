@@ -1,72 +1,56 @@
 # ALZ Infrastructure Deployment - Quick Start
 
 **Created:** 2026-02-09
-**Status:** ✅ Ready to Deploy
+**Updated:** 2026-02-09
+**Status:** ✅ Ready for Implementation
 
 ## Overview
 
-A GitHub Actions workflow has been created to automatically deploy the ALZ infrastructure repositories using the GitHub API. This provides a "non-read-only" solution for repository creation as requested.
+The ALZ infrastructure repositories need to be created and populated by an AI agent with GitHub MCP server write access. Complete implementation instructions are provided in `ALZ_IMPLEMENTATION_INSTRUCTIONS.md`.
 
-## How to Deploy
+## Implementation Method
 
-### Step 1: Run the Workflow
+This deployment will be performed by an AI agent with GitHub MCP write capabilities, **NOT** via GitHub Actions workflows.
 
-1. Go to the **Actions** tab in this repository
-2. Select **"Create ALZ Infrastructure Repositories"** from the workflows list
-3. Click **"Run workflow"** button (top right)
-4. Keep both options checked:
-   - ✅ Create nathlan/alz-subscriptions repository
-   - ✅ Create nathlan/.github-workflows repository
-5. Click the green **"Run workflow"** button
+## For the Implementation Agent
 
-### Step 2: Monitor Execution
+If you are an agent with GitHub MCP server write access, proceed to:
 
-The workflow will:
-- Create both repositories using GitHub API
-- Push initial files to each repository
-- Provide a summary of created repositories
+**👉 `ALZ_IMPLEMENTATION_INSTRUCTIONS.md`**
 
-**Expected Duration:** 2-3 minutes
+This file contains:
+- Complete step-by-step instructions
+- All file contents inline (ready to create)
+- Repository configuration parameters
+- Verification steps
 
-### Step 3: Verify Creation
+## What Gets Deployed
 
-Check that repositories exist:
-- https://github.com/nathlan/alz-subscriptions
-- https://github.com/nathlan/.github-workflows
+The agent will create two repositories:
 
-## What Gets Created
+### Repository 1: `nathlan/alz-subscriptions`
 
-### Repository 1: nathlan/alz-subscriptions
+Core subscription vending infrastructure with Terraform configuration
 
-**Files:**
-- `main.tf` - Terraform root module
-- `variables.tf` - Input variables
-- `outputs.tf` - Module outputs
-- `backend.tf` - Azure Storage backend
-- `README.md` - Documentation
-- `.gitignore` - Terraform ignores
-- `.terraform-version` - Version pin (1.9.0)
-- `landing-zones/.gitkeep` - Directory placeholder
+### Repository 2: `nathlan/.github-workflows`
 
-**Configuration:**
-- Visibility: Internal
-- Issues: Enabled
-- Projects: Enabled
-- Auto-delete branches: Enabled
-- Squash merge: Enabled
-- Merge commits: Disabled
+Reusable GitHub Actions workflows for Terraform deployments
 
-### Repository 2: nathlan/.github-workflows
+## Quick Reference
 
-**Files:**
-- `.github/workflows/azure-terraform-deploy.yml` - Reusable workflow
-- `README.md` - Usage documentation
+For the implementation agent:
+1. Read `ALZ_IMPLEMENTATION_INSTRUCTIONS.md`
+2. Create repositories using GitHub MCP
+3. Create and commit all specified files
+4. Verify repositories are accessible
 
-**Configuration:**
-- Visibility: Internal
-- Issues: Enabled
+For humans needing manual deployment:
+- See `ALZ_REPO_SETUP_GUIDE.md` for manual methods
+- Alternative workflow exists at `.github/workflows/create-alz-infrastructure-repos.yml` (if needed)
 
-## Next Steps After Deployment
+## Post-Deployment Configuration
+
+After the agent creates the repositories, the following manual configuration is required:
 
 ### 1. Configure Secrets in alz-subscriptions
 
@@ -111,51 +95,22 @@ address_space: 10.200.0.0/24
 cost_center: TEST-001
 ```
 
-## Troubleshooting
+---
 
-### Workflow Fails: "Permission denied"
+## Files Deployed by Agent
 
-**Issue:** GITHUB_TOKEN doesn't have org repo creation permissions
+### In `nathlan/alz-subscriptions`:
+- Terraform configuration (main.tf, variables.tf, outputs.tf, backend.tf)
+- Documentation (README.md, terraform.tfvars.example)
+- Configuration (.gitignore, .terraform-version)
+- Directory structure (landing-zones/)
 
-**Solution:**
-- Repository admins may need to approve the workflow
-- Or manually create repositories and use workflow to populate them
-
-### Workflow Succeeds but Push Fails
-
-**Issue:** Repository created but files not pushed
-
-**Solution:**
-- Go to the created repository
-- Manually push files from local clone
-
-### Repository Already Exists
-
-**Issue:** Repository with same name already exists
-
-**Solution:**
-- Delete or rename existing repository
-- Or modify workflow to use different names
-
-## Technical Details
-
-**Workflow File:** `.github/workflows/create-alz-infrastructure-repos.yml`
-
-**Authentication:** Uses `GITHUB_TOKEN` provided by GitHub Actions
-
-**API Endpoints:**
-- `POST /orgs/nathlan/repos` - Create repository
-- Push via HTTPS with token authentication
-
-**Key Features:**
-- Idempotent (can be re-run)
-- Error handling for common issues
-- Detailed logging and summary
-
-## Alternative: Manual Deployment
-
-If the workflow doesn't work due to permissions, follow the manual steps in `ALZ_REPO_SETUP_GUIDE.md`.
+### In `nathlan/.github-workflows`:
+- Reusable Azure Terraform workflow
+- Usage documentation
 
 ---
 
-**Quick Reference:** Run workflow → Verify repos → Configure secrets → Update Azure values → Test orchestrator
+**For detailed implementation instructions:** See `ALZ_IMPLEMENTATION_INSTRUCTIONS.md`
+
+**For manual deployment:** See `ALZ_REPO_SETUP_GUIDE.md`
