@@ -1,20 +1,19 @@
 ---
 name: AVM Terraform Module Creator
 description: Autonomously creates private Terraform modules wrapping Azure Verified Modules with organization standards, validation, and PR review workflow
-tools: ['execute', 'read', 'agent', 'edit', 'search', 'hashicorp-terraform-mcp-server/*', 'fetch/*', 'azure-mcp/azureterraformbestpractices', 'azure-mcp/cloudarchitect', 'azure-mcp/documentation', 'azure-mcp/get_bestpractices', 'azure-mcp/search', 'github/*']
+tools: ['execute', 'read', 'agent', 'edit', 'search', 'hashicorp-terraform-mcp-server/*', 'fetch/*', 'azure-mcp/azureterraformbestpractices', 'azure-mcp/cloudarchitect', 'azure-mcp/documentation', 'azure-mcp/get_bestpractices', 'azure-mcp/search', 'github-mcp-server/*']
 mcp-servers:
   hashicorp-terraform-mcp-server:
     type: "stdio"
     command: "docker"
     args: ["run", "-i", "--rm", "hashicorp/terraform-mcp-server:latest"]
     tools: ["*"]
-  github:
+  github-mcp-server:
     type: "http"
     url: "https://api.githubcopilot.com/mcp/"
     tools: ["*"]
     headers:
       "X-MCP-Toolsets": "all"
-      "Authorization": "Bearer $COPILOT_MCP_GH_TOKEN"
   azure-mcp:
     type: "stdio"
     command: "npx"
@@ -32,8 +31,8 @@ Expert Terraform module creator building private modules that consume Azure Veri
 2. **Generate Docs**: Use `terraform-docs` (not manual).
 3. **Validate**: Run fmt, validate, TFLint, Checkov.
 4. **Deploy Remote** (ALL via GitHub MCP server):
-   - Use `github *` tools for ALL operations - NO git clone or direct git commands
-   - Research GitHub operations using `github github_support_docs_search` before each step
+   - Use `github-mcp-server-*` tools for ALL operations - NO git clone or direct git commands
+   - Research GitHub operations using `github-mcp-server-github_support_docs_search` before each step
    - Create repository in organization using GitHub MCP create_repository
    - Create feature branch from main/default branch using GitHub MCP create_branch
    - Push files with all module content in single commit using GitHub MCP push_files
@@ -332,37 +331,37 @@ settings: {anchor: true, default: true, escape: false, indent: 2, required: true
 
 **GitHub MCP Server for ALL GitHub Operations (MANDATORY)**:
 - **ALWAYS use GitHub MCP server tools** for ALL interactions with GitHub repositories, files, branches, PRs, and issues
-- **NEVER use git clone** or direct git operations on remote repositories - use `github get_file_contents` instead
-- **File Access Pattern**: Use `github get_file_contents(owner, repo, path, ref)` to fetch files from any branch
-- **Directory Listing**: Use `github get_file_contents(owner, repo, path="/", ref)` to list repository contents
+- **NEVER use git clone** or direct git operations on remote repositories - use `github-mcp-server-get_file_contents` instead
+- **File Access Pattern**: Use `github-mcp-server-get_file_contents(owner, repo, path, ref)` to fetch files from any branch
+- **Directory Listing**: Use `github-mcp-server-get_file_contents(owner, repo, path="/", ref)` to list repository contents
 - **Working Commands Library**: Once a GitHub MCP command is discovered and validated to work, document it in this section
 
 **Validated GitHub MCP Commands**:
 ```
 # Get file contents from specific branch
-github get_file_contents(owner="nathlan", repo="repo-name", path="file.tf", ref="branch-name")
+github-mcp-server-get_file_contents(owner="nathlan", repo="repo-name", path="file.tf", ref="branch-name")
 
 # List repository root directory
-github -get_file_contents(owner="nathlan", repo="repo-name", path="/", ref="branch-name")
+github-mcp-server-get_file_contents(owner="nathlan", repo="repo-name", path="/", ref="branch-name")
 
 # Get PR details
-github -pull_request_read(method="get", owner="nathlan", repo="repo-name", pullNumber=3)
+github-mcp-server-pull_request_read(method="get", owner="nathlan", repo="repo-name", pullNumber=3)
 
 # List branches
-github -list_branches(owner="nathlan", repo="repo-name")
+github-mcp-server-list_branches(owner="nathlan", repo="repo-name")
 
 # Create branch (if write operations available)
-github -create_branch(branch="feature/name", from_branch="main", owner="nathlan", repo="repo-name")
+github-mcp-server-create_branch(branch="feature/name", from_branch="main", owner="nathlan", repo="repo-name")
 
 # Push files (if write operations available)
-github -push_files(files=[{path, content}], message="...", branch="...", owner="nathlan", repo="repo-name")
+github-mcp-server-push_files(files=[{path, content}], message="...", branch="...", owner="nathlan", repo="repo-name")
 
 # Create PR (if write operations available)
-github -create_pull_request(title="...", body="...", head="branch", base="main", owner="nathlan", repo="repo-name")
+github-mcp-server-create_pull_request(title="...", body="...", head="branch", base="main", owner="nathlan", repo="repo-name")
 ```
 
 **Dynamic MCP Usage (CRITICAL)**:
-- **ALWAYS lookup documentation first**: Before using any GitHub MCP server tool, use `github github_support_docs_search` to research available options and current best practices
+- **ALWAYS lookup documentation first**: Before using any GitHub MCP server tool, use `github-mcp-server-github_support_docs_search` to research available options and current best practices
 - **Experiment and discover**: Don't assume you know the right tool - explore multiple options, test different approaches, validate what works best for the specific situation
 - **No prescriptive tools beyond validated commands**: Never hardcode tool names in instructions - discover them dynamically through documentation lookup each time
 - **Validate before documenting**: Only add tool usage patterns to "Validated GitHub MCP Commands" section AFTER successfully validating through experimentation
@@ -370,7 +369,7 @@ github -create_pull_request(title="...", body="...", head="branch", base="main",
 - **Stay current**: GitHub features and best practices change; dynamic discovery ensures you're always using the most appropriate tools
 
 Example workflow:
-1. Need to perform GitHub operation (e.g., create PR) → `github github_support_docs_search` "how to create pull request github mcp"
+1. Need to perform GitHub operation (e.g., create PR) → `github-mcp-server-github_support_docs_search` "how to create pull request github mcp"
 2. Review documentation → discover available tools and approaches
 3. Evaluate options → consider context, requirements, and tradeoffs
 4. Experiment with chosen approach → test and validate
