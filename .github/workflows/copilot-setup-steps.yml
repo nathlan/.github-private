@@ -23,35 +23,6 @@ jobs:
       id-token: write
 
     steps:
-      # --- Cross-repo access for ALZ Vending agent ---
-      # Generates a short-lived GitHub App installation token so the MCP server
-      # can create PRs, push files, and create issues in other repos
-      # (alz-subscriptions, github-config, workload repos).
-      #
-      # Prerequisites:
-      # 1. Create GitHub App "alz-vending-bot" with permissions:
-      #    - Contents: Read & Write
-      #    - Pull Requests: Read & Write
-      #    - Issues: Read & Write
-      #    - Metadata: Read (automatic)
-      #    - Actions: Read
-      # 2. Install the app on the nathlan org
-      # 3. Add secrets to the "copilot" environment:
-      #    - ALZ_VENDING_APP_ID
-      #    - ALZ_VENDING_APP_PRIVATE_KEY
-      - name: Generate GitHub App token for cross-repo MCP access
-        id: app-token
-        uses: actions/create-github-app-token@v1
-        with:
-          app-id: ${{ secrets.TF_MODULE_APP_ID }}
-          private-key: ${{ secrets.TF_MODULE_APP_PRIVATE_KEY }}
-          owner: nathlan
-        continue-on-error: true
-
-      - name: Export token for MCP server
-        if: steps.app-token.outcome == 'success'
-        run: echo "COPILOT_MCP_GITHUB_TOKEN=${{ steps.app-token.outputs.token }}" >> "$COPILOT_MCP_GH_TOKEN"
-
       # --- Standard tooling setup ---
       - name: Checkout code
         uses: actions/checkout@v5
