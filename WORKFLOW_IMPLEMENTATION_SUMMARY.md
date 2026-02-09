@@ -9,7 +9,7 @@ This implementation provides a complete, production-ready CI/CD solution for Azu
 #### 1. Workflows (`.github/workflows/`)
 
 **Parent Reusable Workflow** - `azure-terraform-deploy-reusable.yml`
-- ⚠️ **Action Required**: Move this file to `nathlan/.github-workflows/.github/workflows/azure-terraform-deploy.yml`
+- ✅ **Automated deployment**: Use workflow `.github/workflows/create-workflows-repo.yml` to create the `nathlan/.github-workflows` repository and deploy this file
 - Reusable workflow component with 4 jobs: validate, security, plan, apply
 - Implements Azure OIDC authentication
 - Includes Checkov security scanning (soft_fail: false)

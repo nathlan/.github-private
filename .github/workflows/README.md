@@ -10,7 +10,7 @@ This directory contains GitHub Actions workflows for automated Azure Terraform d
 
 **Purpose**: Reusable workflow that provides standardized Terraform deployment capabilities for Azure.
 
-**⚠️ Important**: This file should be moved to `nathlan/.github-workflows/.github/workflows/azure-terraform-deploy.yml` once the central workflows repository is created.
+**⚠️ Important**: To create the central workflows repository and deploy this file, run the workflow `.github/workflows/create-workflows-repo.yml` in this repository. It will automatically create `nathlan/.github-workflows` and deploy this workflow to `.github/workflows/azure-terraform-deploy.yml`.
 
 **Jobs**:
 - ✅ **validate**: Terraform format, validation, and TFLint checks
