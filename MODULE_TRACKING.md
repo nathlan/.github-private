@@ -8,7 +8,7 @@ This file tracks all Terraform modules created for the organization.
 |-------------|----------------|----------------|--------|-------------|
 | terraform-azurerm-resource-group | [Link](https://github.com/nathlan/terraform-azurerm-resource-group) | v1.0.0 → v2.0.0 | 🔄 PR Open | Azure Resource Group with naming integration |
 | terraform-azurerm-storage-account | [Link](https://github.com/nathlan/terraform-azurerm-storage-account) | v0.1.0 → v0.2.0 | 🔄 PR Open | Storage Account with naming integration |
-| terraform-azurerm-landing-zone-vending | [Link](https://github.com/nathlan/terraform-azurerm-landing-zone-vending) | v1.0.0 → v1.0.2 | 🔄 PR Open | Subscription vending wrapper for Azure Landing Zones |
+| terraform-azurerm-landing-zone-vending | [Link](https://github.com/nathlan/terraform-azurerm-landing-zone-vending) | v1.0.2 → v2.0.0 | ⚠️ Ready for PR | ALZ subscription vending with UMI and budget support |
 | terraform-azurerm-firewall | [Link](https://github.com/nathlan/terraform-azurerm-firewall) | v0.1.2 → v0.1.4 | 🔄 PR Open | Azure Firewall wrapper with Australian region validation |
 | terraform-azurerm-firewall-policy | [Link](https://github.com/nathlan/terraform-azurerm-firewall-policy) | v0.1.0 → v0.2.0 | 🔄 PR Open | Firewall Policy with rule collection groups |
 
@@ -29,10 +29,11 @@ This file tracks all Terraform modules created for the organization.
 - **PR**: [#3](https://github.com/nathlan/terraform-azurerm-storage-account/pull/3) - Integrate Azure naming module with automatic tagging
 
 ### terraform-azurerm-landing-zone-vending
-- **AVM Source**: `Azure/avm-ptn-alz-sub-vending/azure` 0.1.0
-- **Key Features**: Subscription alias, management group association, virtual network deployment
+- **AVM Source**: `Azure/avm-ptn-alz-sub-vending/azure` 0.1.1
+- **Key Features**: Subscription vending, virtual networks, User Managed Identities with OIDC, budget management
 - **Submodules**: None
-- **PR**: [#3](https://github.com/nathlan/terraform-azurerm-landing-zone-vending/pull/3) - Add terraform version constraint
+- **Current PR**: [#3](https://github.com/nathlan/terraform-azurerm-landing-zone-vending/pull/3) - Terraform version constraint (merged)
+- **Pending Enhancement**: Add UMI and budget pass-through variables (ready in /tmp/, awaiting PR creation)
 
 ### terraform-azurerm-firewall
 - **AVM Source**: `Azure/avm-res-network-azurefirewall/azurerm` ~> 0.4.0
