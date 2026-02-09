@@ -14,6 +14,7 @@ mcp-servers:
     tools: ["*"]
     headers:
       "X-MCP-Toolsets": "all"
+      "Authorization": "Bearer $COPILOT_MCP_GH_TOKEN"
   azure-mcp:
     type: "stdio"
     command: "npx"
