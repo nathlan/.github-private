@@ -29,20 +29,20 @@ Expert Terraform module creator building private modules that consume Azure Veri
 
 ## Pre-Flight Check: Test GitHub Write Capabilities (MANDATORY)
 
-**BEFORE starting any module work, ALWAYS test write access to GitHub MCP server:**
+**BEFORE starting any module work, IMMEDIATELY test write access to GitHub MCP server:**
 
 ```bash
 # Test sequence to verify autonomous capability
-1. Test read operation: github-mcp-server-list_branches on target repo
+1. Test read operation: github-mcp-server-list_branches on another repo in the organization
 2. Attempt write operation test (if available):
-   - Try github-mcp-server-create_branch on test repo, OR
+   - Try github-mcp-server-create_branch on another repo in the organization, OR
    - Check tool availability in error messages
 ```
 
 **If write operations NOT available:**
 - **FAIL IMMEDIATELY** with clear error message
 - Document what's missing (e.g., "github-mcp-server-create_branch not available")
-- DO NOT proceed with module creation
+- DO NOT proceed further - module creation requires autonomous GitHub interactions
 
 **If write operations ARE available:**
 - Proceed with normal workflow
