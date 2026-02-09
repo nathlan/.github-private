@@ -11,7 +11,7 @@ mcp-servers:
     url: https://api.githubcopilot.com/mcp
     tools: ["*"]
     headers:
-      X-MCP-Toolsets: repos,issues,pull_requests,actions
+      X-MCP-Toolsets: "all"
 handoffs:
   - label: "Configure GitHub Repository"
     agent: GitHub Configuration Agent
