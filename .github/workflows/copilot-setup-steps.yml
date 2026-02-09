@@ -56,6 +56,9 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v5
 
+      - name: Setup Node.js for NPX
+        uses: actions/setup-node@v4
+
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
 
