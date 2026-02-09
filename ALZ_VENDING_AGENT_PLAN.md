@@ -1,8 +1,8 @@
 # ALZ Subscription Vending Orchestrator — Implementation Plan
 
-> **Status:** Draft v2  
-> **Created:** 2026-02-09  
-> **Author:** Custom Agent Foundry  
+> **Status:** Draft v2
+> **Created:** 2026-02-09
+> **Author:** Custom Agent Foundry
 > **Sources:** Azure CAF docs, `Azure/lz-vending/azurerm` v7.0.3, `nathlan/terraform-azurerm-landing-zone-vending` (private wrapper), existing agents (github-config, cicd-workflow, terraform-module-creator)
 
 ---
@@ -36,8 +36,8 @@ Build an **ALZ Vending Orchestrator Agent** — a pure orchestrator that enables
 
 ### 2.1 Private LZ Vending Module
 
-**Repo:** `nathlan/terraform-azurerm-landing-zone-vending`  
-**Wraps:** `Azure/avm-ptn-alz-sub-vending/azure` v0.1.0  
+**Repo:** `nathlan/terraform-azurerm-landing-zone-vending`
+**Wraps:** `Azure/avm-ptn-alz-sub-vending/azure` v0.1.0
 **Current state:** v1.0.2 (PR open for terraform version constraint)
 
 **Current variables exposed:**
@@ -56,15 +56,15 @@ Build an **ALZ Vending Orchestrator Agent** — a pure orchestrator that enables
 
 ### 2.2 ALZ Infra Repo
 
-**Repo:** `{org}/alz-subscriptions` (placeholder — to be confirmed)  
-**Structure:** Shared root module + one `.tfvars` per landing zone  
-**State:** Azure Storage backend, one state file per LZ  
+**Repo:** `{org}/alz-subscriptions` (placeholder — to be confirmed)
+**Structure:** Shared root module + one `.tfvars` per landing zone
+**State:** Azure Storage backend, one state file per LZ
 **CI/CD:** Plan on PR, apply on merge (managed by platform team)
 
 ### 2.3 GitHub Config Repo
 
-**Repo:** `{org}/github-config` (placeholder — to be confirmed)  
-**Agent:** `github-config` agent creates Terraform PRs here  
+**Repo:** `{org}/github-config` (placeholder — to be confirmed)
+**Agent:** `github-config` agent creates Terraform PRs here
 **CI/CD:** Managed via `cicd-workflow` agent output
 
 ### 2.4 Specialist Agents Available
@@ -169,8 +169,8 @@ This is **data generation, not Terraform code generation**. The orchestrator fil
 
 ### 5.2 Target File
 
-**Repo:** `{org}/alz-subscriptions`  
-**File:** `landing-zones/{workload_name}.tfvars`  
+**Repo:** `{org}/alz-subscriptions`
+**File:** `landing-zones/{workload_name}.tfvars`
 **Branch:** `lz/{workload_name}`
 
 ### 5.3 Generated `.tfvars` Content
@@ -605,9 +605,9 @@ output "umi_principal_ids" { ... }
 | 9 | Create/verify ALZ infra repo structure | Repo setup | Medium | Root module + tfvars pattern + CI/CD |
 | 10 | End-to-end test with sample request | Testing | High | Full flow through all phases |
 
-**Task 1-7** = the agent definition file itself  
-**Task 8** = separate task for `terraform-module-creator`  
-**Task 9-10** = integration work  
+**Task 1-7** = the agent definition file itself
+**Task 8** = separate task for `terraform-module-creator`
+**Task 9-10** = integration work
 
 ---
 
