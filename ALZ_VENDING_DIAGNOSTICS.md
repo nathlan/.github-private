@@ -135,11 +135,11 @@ virtual_networks = {
    ```bash
    # Tenant ID
    az account show --query tenantId -o tsv
-   
+
    # Billing Scope (Enterprise Agreement example)
    az billing enrollment-account list --query "[0].id" -o tsv
    # Format: /providers/Microsoft.Billing/billingAccounts/{id}/enrollmentAccounts/{id}
-   
+
    # Hub VNet Resource ID
    az network vnet show \
      --resource-group rg-hub-network \
@@ -263,17 +263,17 @@ The private wrapper module `nathlan/terraform-azurerm-landing-zone-vending` does
    Invoke the terraform-module-creator agent to enhance the private module:
    ```
    @terraform-module-creator
-   
+
    Enhance the nathlan/terraform-azurerm-landing-zone-vending module to expose:
-   
+
    1. User Managed Identity variables (pass-through to underlying AVM module):
       - umi_enabled (bool)
       - user_managed_identities (map of UMI configs)
-   
+
    2. Budget variables:
       - budget_enabled (bool)
       - budgets (map of budget configs)
-   
+
    Follow the existing pattern of pass-through variables used for virtual_networks
    and resource_groups. Ensure proper validation and documentation.
    ```
