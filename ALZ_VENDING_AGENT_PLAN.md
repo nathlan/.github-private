@@ -1,9 +1,9 @@
 # ALZ Subscription Vending Orchestrator — Implementation Plan
 
-> **Status:** Draft v2  
+> **Status:** Draft v3  
 > **Created:** 2026-02-09  
 > **Author:** Custom Agent Foundry  
-> **Sources:** Azure CAF docs, `Azure/lz-vending/azurerm` v7.0.3, `nathlan/terraform-azurerm-landing-zone-vending` (private wrapper), existing agents (github-config, cicd-workflow, terraform-module-creator)
+> **Sources:** Azure CAF docs, `Azure/lz-vending/azurerm` v7.0.3, `nathlan/terraform-azurerm-landing-zone-vending` (private wrapper), existing agents (github-config, cicd-workflow, terraform-module-creator), GitHub Copilot coding agent docs
 
 ---
 
@@ -604,6 +604,9 @@ output "umi_principal_ids" { ... }
 | 8 | Enhance private LZ module (UMI + budget variables) | Module enhancement | Medium | Task for `terraform-module-creator` agent |
 | 9 | Create/verify ALZ infra repo structure | Repo setup | Medium | Root module + tfvars pattern + CI/CD |
 | 10 | End-to-end test with sample request | Testing | High | Full flow through all phases |
+| 11 | Create `copilot-setup-steps.yml` for GitHub App token | Repo config | Low | Enables cross-repo MCP access |
+| 12 | Create GitHub App `alz-vending-bot` | Org setup | Low | Permissions per §14.2 |
+| 13 | Configure MCP server in repo settings | Repo config | Low | JSON per §14.4 |
 
 **Task 1-7** = the agent definition file itself  
 **Task 8** = separate task for `terraform-module-creator`  
@@ -624,7 +627,140 @@ output "umi_principal_ids" { ... }
 
 ---
 
-## 14. Future Enhancements
+## 14. GitHub App & Cross-Repo Access
+
+### 14.1 The Problem
+
+The coding agent runs in `.github-private` but needs to create PRs/issues in **other repos** (`alz-subscriptions`, `github-config`, workload repos). By default, the built-in GitHub MCP server only has read-only access to the current repository.
+
+### 14.2 Solution: GitHub App + `copilot-setup-steps.yml`
+
+Create a GitHub App that is installed on the org with access to the target repos. At runtime, `copilot-setup-steps.yml` generates a short-lived installation token that the MCP server uses for cross-repo operations.
+
+#### GitHub App Configuration
+
+| Setting | Value |
+|---|---|
+| **App Name** | `alz-vending-bot` |
+| **Homepage URL** | `https://github.com/nathlan/.github-private` |
+| **Webhook** | Disabled (not needed) |
+| **Installation Scope** | Organization: `nathlan` |
+
+#### Required Repository Permissions
+
+| Permission | Access | Purpose |
+|---|---|---|
+| **Contents** | Read & Write | Push `.tfvars` files, read existing LZ configs, push workflow files |
+| **Pull Requests** | Read & Write | Create PRs in `alz-subscriptions`, `github-config`, workload repos |
+| **Issues** | Read & Write | Create/update tracking issues for vending lifecycle |
+| **Metadata** | Read | Required baseline (automatic) |
+| **Actions** | Read | Monitor CI/CD workflow run status for Phase 4 tracking |
+
+#### Installation Scope
+
+Install on specific repos:
+- `.github-private` (home repo)
+- `alz-subscriptions` (LZ infra)
+- `github-config` (GitHub Terraform config)
+- Any workload repos created by the vending process
+
+> **Note:** As new workload repos are created, the GitHub App installation will need to be updated to include them, or the app should be configured with org-wide access.
+
+### 14.3 `copilot-setup-steps.yml`
+
+This Actions workflow runs automatically when the coding agent starts a session. It generates the GitHub App installation token and exports it as an environment variable for the MCP server.
+
+File: `.github/workflows/copilot-setup-steps.yml`
+
+```yaml
+name: "Copilot Setup Steps"
+on: workflow_dispatch
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  copilot-setup-steps:
+    runs-on: ubuntu-latest
+    environment: copilot
+    steps:
+      - name: Generate GitHub App token
+        id: app-token
+        uses: actions/create-github-app-token@v1
+        with:
+          app-id: ${{ secrets.ALZ_VENDING_APP_ID }}
+          private-key: ${{ secrets.ALZ_VENDING_APP_PRIVATE_KEY }}
+          owner: nathlan
+
+      - name: Export token for MCP server
+        run: echo "COPILOT_MCP_GITHUB_TOKEN=${{ steps.app-token.outputs.token }}" >> "$GITHUB_ENV"
+```
+
+### 14.4 MCP Configuration (Repository Settings)
+
+Configured in the repo's **Settings → Copilot → Coding Agent → MCP configuration**:
+
+```json
+{
+  "mcpServers": {
+    "github-mcp-server": {
+      "type": "http",
+      "url": "https://api.githubcopilot.com/mcp",
+      "tools": ["*"],
+      "headers": {
+        "X-MCP-Toolsets": "repos,issues,pull_requests,actions"
+      }
+    }
+  }
+}
+```
+
+> **Key:** Removing `/readonly` from the URL enables write operations. The `X-MCP-Toolsets` header controls which tool categories are available.
+
+### 14.5 Copilot Environment Secrets
+
+Add to the repo's `copilot` environment (Settings → Environments → copilot):
+
+| Secret | Value |
+|---|---|
+| `ALZ_VENDING_APP_ID` | GitHub App ID (numeric) |
+| `ALZ_VENDING_APP_PRIVATE_KEY` | GitHub App private key (PEM) |
+| `COPILOT_MCP_GITHUB_TOKEN` | _(auto-populated by copilot-setup-steps.yml at runtime)_ |
+
+---
+
+## 15. Invocation Model
+
+### 15.1 Prompt Files vs Agent Profiles vs Issue Templates
+
+| Mechanism | `.prompt.md` | `.agent.md` | Issue Template |
+|---|---|---|---|
+| **Works in IDE** | ✅ Yes (VS Code, JetBrains) | ✅ Yes | ❌ No |
+| **Works with coding agent** | ❌ No (IDE-only) | ✅ Yes | ✅ Yes (assign to Copilot) |
+| **Defines tools/MCP** | ❌ No | ✅ Yes | ❌ No |
+| **Contains system prompt** | ❌ No (user prompt only) | ✅ Yes | ❌ No |
+| **Structured inputs** | ✅ Variables syntax | ✅ `argument-hint` | ✅ Form fields |
+
+**Decision:** Use `.agent.md` as the primary mechanism — it works in both IDE and cloud coding agent contexts. Optionally create an issue template for users who want a form-based intake.
+
+### 15.2 Supported Invocation Paths
+
+| Path | Steps |
+|---|---|
+| **VS Code → Coding Agent** | Select `ALZ Subscription Vending` from agent dropdown → type structured prompt → click "Delegate to coding agent" |
+| **github.com Agents Tab** | Go to github.com/copilot/agents → select `.github-private` repo → select `ALZ Subscription Vending` agent → type prompt |
+| **Issue Assignment** | Create issue with LZ request → assign to Copilot → select `ALZ Subscription Vending` as custom agent |
+| **GitHub CLI** | `gh copilot /agent alz-vending "workload_name: payments-api, ..."` |
+| **REST/GraphQL API** | Create issue → assign `copilot-swe-agent[bot]` with `custom_agent: "alz-vending"` |
+
+### 15.3 The Agent Lives in `.github-private`
+
+Because the agent is defined in `agents/alz-vending.agent.md` in `.github-private`, it is available **org-wide** across all repositories in the organization. Users can invoke it from any repo context.
+
+---
+
+## 16. Future Enhancements
 
 1. **Additional LZ product lines** — Online (no hub peering), Sandbox (isolated), Data (private endpoints)
 2. **IPAM integration** — Auto-assign CIDR from IP Address Management
@@ -632,4 +768,5 @@ output "umi_principal_ids" { ... }
 4. **Decommission flow** — Reverse agent that removes LZ resources
 5. **Cost reporting** — Pull Azure Cost Management data into tracking issue
 6. **App-repo GitHub settings merge** — Let users define GitHub settings as Terraform in their app LZ repo (e.g. extra branch protection rules, additional teams). The org-level parent CI/CD workflow merges/overwrites these with org defaults, giving teams customization within guardrails
-7. **GitHub Copilot coding agent trigger** — Auto-run from GitHub Issue templates
+7. **Issue template intake** — GitHub Issue template with form fields that auto-assigns to Copilot with the ALZ Vending agent
+8. **Automated CIDR conflict detection** — Read all existing `.tfvars` and validate proposed CIDR doesn't overlap
