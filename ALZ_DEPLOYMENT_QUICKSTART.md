@@ -26,7 +26,7 @@ This file contains:
 
 ## What Gets Deployed
 
-The agent will create two repositories:
+The agent will create three repositories:
 
 ### Repository 1: `nathlan/alz-subscriptions`
 
@@ -35,6 +35,12 @@ Core subscription vending infrastructure with Terraform configuration
 ### Repository 2: `nathlan/.github-workflows`
 
 Reusable GitHub Actions workflows for Terraform deployments
+
+### Repository 3: `nathlan/alz-workload-template`
+
+Template repository for new workload repositories with pre-configured child workflows
+
+**Purpose:** When creating new workload repositories (via ALZ vending or manually), use this template to ensure consistent workflow setup, Terraform structure, and documentation.
 
 ## Quick Reference
 
@@ -106,8 +112,16 @@ cost_center: TEST-001
 - Directory structure (landing-zones/)
 
 ### In `nathlan/.github-workflows`:
-- Reusable Azure Terraform workflow
+- Reusable Azure Terraform workflow (parent workflow)
 - Usage documentation
+
+### In `nathlan/alz-workload-template`:
+- Child workflow that calls parent reusable workflow
+- Terraform directory structure with starter files
+- Documentation template for workload repos
+- Configuration files (.gitignore)
+
+**Note:** The template repository (`alz-workload-template`) should be used when creating new workload repositories to ensure they have the correct workflow setup from the start.
 
 ---
 

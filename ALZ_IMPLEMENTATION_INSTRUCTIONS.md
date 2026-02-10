@@ -10,6 +10,14 @@
 
 This document provides complete step-by-step instructions for an AI agent with GitHub MCP server write access to create and populate the ALZ infrastructure repositories. All file contents are included inline.
 
+### Repositories to Create
+
+1. **`nathlan/alz-subscriptions`** - Core subscription vending infrastructure
+2. **`nathlan/.github-workflows`** - Reusable parent workflows for Terraform deployments
+3. **`nathlan/alz-workload-template`** - Template repository for new workload repositories (contains child workflows)
+
+The template repository enables consistent setup of new workload repositories with pre-configured workflows that call the reusable parent workflows.
+
 ## Prerequisites
 
 - GitHub MCP server with write access configured
@@ -688,6 +696,379 @@ And create it at:
 
 ---
 
+## Task 3: Create `nathlan/alz-workload-template` Repository
+
+### Step 3.1: Create Template Repository
+
+Use GitHub MCP to create repository with these parameters:
+
+```json
+{
+  "owner": "nathlan",
+  "name": "alz-workload-template",
+  "description": "Template repository for ALZ workload repositories with pre-configured Terraform workflows",
+  "visibility": "internal",
+  "has_issues": true,
+  "has_projects": false,
+  "has_wiki": false,
+  "has_discussions": false,
+  "is_template": true,
+  "auto_init": true
+}
+```
+
+**Important:** Note the `"is_template": true` parameter - this makes it a GitHub template repository.
+
+### Step 3.2: Create File Structure
+
+Create the following files in the `main` branch of `nathlan/alz-workload-template`:
+
+#### File: `README.md`
+
+```markdown
+# [Workload Name] - Azure Landing Zone
+
+> **Note:** This repository was created from the ALZ workload template. Update this README with your workload-specific information.
+
+## Overview
+
+This repository contains the Infrastructure as Code (Terraform) for the `[workload-name]` Azure Landing Zone.
+
+## Repository Structure
+
+```
+.
+├── .github/
+│   └── workflows/
+│       └── terraform-deploy.yml    # CI/CD workflow for Terraform
+├── terraform/
+│   ├── main.tf                     # Main Terraform configuration
+│   ├── variables.tf                # Input variables
+│   ├── outputs.tf                  # Outputs
+│   └── terraform.tf                # Provider and backend config
+├── .gitignore                      # Git ignore patterns
+└── README.md                       # This file
+```
+
+## Deployment Workflow
+
+This repository uses a parent/child workflow pattern:
+- **Parent workflow:** `nathlan/.github-workflows/.github/workflows/azure-terraform-deploy.yml` (reusable)
+- **Child workflow:** `.github/workflows/terraform-deploy.yml` (this repo)
+
+### Workflow Triggers
+
+- **Pull Requests:** Validates, scans, and plans changes (no apply)
+- **Push to main:** Deploys to production with manual approval gate
+- **Manual dispatch:** Allows selecting environment for deployment
+
+## Getting Started
+
+### 1. Configure Repository Secrets
+
+Add these secrets in **Settings → Secrets and variables → Actions**:
+
+```
+AZURE_CLIENT_ID       - Service principal client ID (OIDC)
+AZURE_TENANT_ID       - Azure tenant ID
+AZURE_SUBSCRIPTION_ID - Azure subscription ID
+```
+
+### 2. Create Environment
+
+Create a **production** environment in **Settings → Environments**:
+- Enable "Required reviewers" and add platform team members
+- Optionally configure deployment branches (e.g., only main)
+- Add the same secrets as above at the environment level
+
+### 3. Configure Terraform Backend
+
+Update `terraform/terraform.tf` with your backend configuration:
+
+```hcl
+terraform {
+  backend "azurerm" {
+    resource_group_name  = "rg-terraform-state"
+    storage_account_name = "stterraformstate"
+    container_name       = "tfstate"
+    key                  = "[workload-name]-production.tfstate"
+    use_oidc             = true
+  }
+}
+```
+
+### 4. Add Your Infrastructure Code
+
+Add your Terraform resources to the `terraform/` directory:
+- Use `main.tf` for resource definitions
+- Define variables in `variables.tf`
+- Expose outputs in `outputs.tf`
+
+### 5. Create a Pull Request
+
+1. Create a feature branch
+2. Add your Terraform changes
+3. Push and create a PR
+4. Review the Terraform plan in PR comments
+5. Get approval from the platform team
+6. Merge to trigger deployment
+
+## Azure OIDC Setup
+
+If not already configured, set up Azure OIDC for this repository:
+
+```bash
+# Get the App Registration ID
+APP_ID="<your-app-id>"
+REPO_NAME="<this-repo-name>"
+
+# Add federated credential for this repository
+az ad app federated-credential create \
+  --id $APP_ID \
+  --parameters "{
+    \"name\": \"github-${REPO_NAME}\",
+    \"issuer\": \"https://token.actions.githubusercontent.com\",
+    \"subject\": \"repo:nathlan/${REPO_NAME}:ref:refs/heads/main\",
+    \"audiences\": [\"api://AzureADTokenExchange\"]
+  }"
+```
+
+## Support
+
+For questions or issues:
+- Create an issue in this repository
+- Contact the platform engineering team
+- Reference the ALZ vending documentation in `nathlan/.github-private`
+
+## Related Repositories
+
+- **ALZ Subscriptions:** `nathlan/alz-subscriptions` - Subscription vending infrastructure
+- **Reusable Workflows:** `nathlan/.github-workflows` - Central workflow definitions
+- **LZ Vending Module:** `nathlan/terraform-azurerm-landing-zone-vending`
+```
+
+#### File: `.gitignore`
+
+```
+# Terraform
+.terraform/
+.terraform.lock.hcl
+*.tfstate
+*.tfstate.*
+*.tfplan
+*.tfplan.*
+crash.log
+crash.*.log
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+.terraformrc
+terraform.rc
+
+# Terraform variables (may contain sensitive data)
+*.auto.tfvars
+*.auto.tfvars.json
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# OS
+Thumbs.db
+```
+
+#### File: `.github/workflows/terraform-deploy.yml`
+
+```yaml
+name: Terraform Deployment
+
+# ============================================================================
+# CHILD WORKFLOW - Calls Reusable Parent Workflow
+# ============================================================================
+# This workflow calls the centralized reusable workflow for Azure Terraform
+# deployments. The parent workflow handles validation, security scanning,
+# planning, and deployment with OIDC authentication.
+# ============================================================================
+
+on:
+  # Trigger on pushes to main branch (after PR merge)
+  push:
+    branches:
+      - main
+    paths:
+      - 'terraform/**'
+      - '.github/workflows/terraform-deploy.yml'
+
+  # Trigger on pull requests to main (for plan validation)
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'terraform/**'
+      - '.github/workflows/terraform-deploy.yml'
+
+  # Allow manual triggering for testing and emergency deployments
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Target environment for deployment'
+        required: false
+        type: choice
+        options:
+          - production
+          - staging
+          - development
+        default: 'production'
+
+permissions:
+  contents: read
+  pull-requests: write
+  id-token: write
+  issues: write
+
+jobs:
+  # Call the parent reusable workflow from the central repository
+  deploy:
+    name: Deploy to Azure
+    uses: nathlan/.github-workflows/.github/workflows/azure-terraform-deploy.yml@main
+
+    with:
+      # REQUIRED: Deployment environment (must match environment in repo settings)
+      environment: ${{ inputs.environment || 'production' }}
+
+      # OPTIONAL: Override Terraform version if needed (default: 1.9.0)
+      terraform-version: '1.9.0'
+
+      # REQUIRED: Working directory containing Terraform code
+      working-directory: 'terraform'
+
+      # OPTIONAL: Azure region (default: uksouth)
+      azure-region: 'uksouth'
+
+    secrets:
+      # REQUIRED: Azure OIDC credentials (configure in repository settings)
+      AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+      AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+      AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+```
+
+#### Directory: `terraform/`
+
+Create the `terraform/` directory with the following files:
+
+#### File: `terraform/main.tf`
+
+```hcl
+# ==============================================================================
+# Main Terraform Configuration
+# ==============================================================================
+# Add your Azure resources here
+#
+# Example:
+# resource "azurerm_resource_group" "main" {
+#   name     = var.resource_group_name
+#   location = var.location
+#   tags     = var.tags
+# }
+# ==============================================================================
+
+# Placeholder - Add your resources here
+```
+
+#### File: `terraform/variables.tf`
+
+```hcl
+# ==============================================================================
+# Input Variables
+# ==============================================================================
+
+variable "location" {
+  type        = string
+  description = "Azure region for resources"
+  default     = "uksouth"
+}
+
+variable "environment" {
+  type        = string
+  description = "Environment name (e.g., production, staging, development)"
+  default     = "production"
+}
+
+variable "tags" {
+  type        = map(string)
+  description = "Common tags to apply to all resources"
+  default = {
+    ManagedBy = "Terraform"
+    Source    = "nathlan/alz-workload-template"
+  }
+}
+```
+
+#### File: `terraform/outputs.tf`
+
+```hcl
+# ==============================================================================
+# Outputs
+# ==============================================================================
+# Define outputs to expose information about created resources
+#
+# Example:
+# output "resource_group_id" {
+#   description = "The ID of the resource group"
+#   value       = azurerm_resource_group.main.id
+# }
+# ==============================================================================
+
+# Placeholder - Add your outputs here
+```
+
+#### File: `terraform/terraform.tf`
+
+```hcl
+# ==============================================================================
+# Terraform and Provider Configuration
+# ==============================================================================
+
+terraform {
+  required_version = ">= 1.9.0"
+
+  # Configure Azure backend for remote state
+  # UPDATE THIS with your actual backend configuration
+  backend "azurerm" {
+    resource_group_name  = "rg-terraform-state"
+    storage_account_name = "stterraformstate"
+    container_name       = "tfstate"
+    key                  = "workload-template.tfstate" # UPDATE: Change to your workload name
+    use_oidc             = true
+  }
+
+  required_providers {
+    azurerm = {
+      source  = "hashicorp/azurerm"
+      version = "~> 4.0"
+    }
+  }
+}
+
+provider "azurerm" {
+  features {}
+  use_oidc = true
+}
+```
+
+### Step 3.3: Mark as Template
+
+Ensure the repository is marked as a template repository. This is set via the `"is_template": true` parameter during creation, but can also be configured via:
+- Repository Settings → Template repository checkbox
+- Or via GitHub API: `PATCH /repos/nathlan/alz-workload-template` with `{"is_template": true}`
+
+---
+
 ## Implementation Steps Summary
 
 For the agent to execute:
@@ -713,10 +1094,26 @@ For the agent to execute:
    - Copy `azure-terraform-deploy-reusable.yml` from `.github-private` to `azure-terraform-deploy.yml`
    - Commit message: "Initial commit: Add reusable Azure Terraform workflow"
 
-5. **Verify repositories**
-   - Check both repositories are accessible
+5. **Create `nathlan/alz-workload-template` repository**
+   - Use repository creation API/MCP
+   - Set internal visibility
+   - **Set `is_template: true`** (critical for template functionality)
+   - Enable issues
+
+6. **Populate `alz-workload-template` with files**
+   - Create `README.md` in root
+   - Create `.gitignore` in root
+   - Create `.github/workflows/` directory
+   - Create `terraform-deploy.yml` in `.github/workflows/`
+   - Create `terraform/` directory
+   - Create 4 Terraform files in `terraform/` (main.tf, variables.tf, outputs.tf, terraform.tf)
+   - Commit message: "Initial commit: ALZ workload template with Terraform workflow"
+
+7. **Verify repositories**
+   - Check all three repositories are accessible
    - Verify all files are present
    - Confirm default branch is `main`
+   - **Verify `alz-workload-template` is marked as a template repository**
 
 ---
 
@@ -753,6 +1150,15 @@ After the agent creates these repositories, manual configuration is required:
 
 No additional configuration required. The workflow is ready to be called by other repositories.
 
+### For `alz-workload-template`:
+
+No additional configuration required. This is a template repository ready to be used when creating new workload repositories.
+
+**Usage:** When creating a new workload repository (either manually or via ALZ vending orchestrator):
+1. Use "Use this template" button on GitHub UI, or
+2. Via API: `POST /repos/nathlan/alz-workload-template/generate` with target repo name
+3. The new repository will be created with all template files pre-configured
+
 ---
 
 ## Verification
@@ -767,6 +1173,14 @@ curl -H "Authorization: token $GITHUB_TOKEN" \
 curl -H "Authorization: token $GITHUB_TOKEN" \
   https://api.github.com/repos/nathlan/.github-workflows
 
+curl -H "Authorization: token $GITHUB_TOKEN" \
+  https://api.github.com/repos/nathlan/alz-workload-template
+
+# Verify template repo is marked as template
+curl -H "Authorization: token $GITHUB_TOKEN" \
+  https://api.github.com/repos/nathlan/alz-workload-template | jq '.is_template'
+# Expected: true
+
 # List files in alz-subscriptions
 curl -H "Authorization: token $GITHUB_TOKEN" \
   https://api.github.com/repos/nathlan/alz-subscriptions/contents
@@ -774,12 +1188,18 @@ curl -H "Authorization: token $GITHUB_TOKEN" \
 # List workflows in .github-workflows
 curl -H "Authorization: token $GITHUB_TOKEN" \
   https://api.github.com/repos/nathlan/.github-workflows/contents/.github/workflows
+
+# List files in template repo
+curl -H "Authorization: token $GITHUB_TOKEN" \
+  https://api.github.com/repos/nathlan/alz-workload-template/contents
 ```
 
 Expected responses:
-- Both repositories return 200 OK with repository metadata
+- All three repositories return 200 OK with repository metadata
+- `alz-workload-template.is_template` is `true`
 - `alz-subscriptions` contains: main.tf, variables.tf, outputs.tf, backend.tf, README.md, .gitignore, .terraform-version, terraform.tfvars.example, landing-zones/
 - `.github-workflows` contains: README.md, .github/workflows/azure-terraform-deploy.yml
+- `alz-workload-template` contains: README.md, .gitignore, .github/workflows/terraform-deploy.yml, terraform/ (with 4 files)
 
 ---
 
@@ -796,7 +1216,49 @@ Expected responses:
 - 1 file in .github/workflows/ (azure-terraform-deploy.yml)
 - Total: 2 files + 1 directory
 
-**Grand Total:** 10 files, 2 directories across 2 repositories
+**Repository 3: `nathlan/alz-workload-template` (Template)**
+- 2 files in root (README.md, .gitignore)
+- 1 directory (.github/workflows/)
+- 1 file in .github/workflows/ (terraform-deploy.yml)
+- 1 directory (terraform/)
+- 4 files in terraform/ (main.tf, variables.tf, outputs.tf, terraform.tf)
+- Total: 7 files + 2 directories
+
+**Grand Total:** 17 files, 4 directories across 3 repositories
+
+---
+
+## Using the Template Repository
+
+When the ALZ vending orchestrator (or GitHub config agent) creates a new workload repository, it should use this template:
+
+### Via GitHub API:
+
+```bash
+POST /repos/nathlan/alz-workload-template/generate
+{
+  "owner": "nathlan",
+  "name": "workload-app-name",
+  "description": "Azure Landing Zone for app-name workload",
+  "include_all_branches": false,
+  "private": false
+}
+```
+
+### Via GitHub UI:
+
+1. Navigate to `https://github.com/nathlan/alz-workload-template`
+2. Click "Use this template" button
+3. Fill in new repository name
+4. Click "Create repository from template"
+
+### Benefits:
+
+- New workload repositories start with complete workflow setup
+- Terraform directory structure pre-configured
+- Child workflow already calling parent reusable workflow
+- Documentation template ready to customize
+- Consistent structure across all workload repositories
 
 ---
 
