@@ -6,6 +6,19 @@
 
 ---
 
+## ⚠️ CRITICAL: Implementation Method
+
+**YOU MUST USE GITHUB MCP SERVER TOOLS EXCLUSIVELY**
+
+- ❌ **NO access to `gh` CLI**
+- ❌ **NO access to `curl` or direct REST API calls**
+- ❌ **NO access to GitHub API via bash/shell**
+- ✅ **ONLY GitHub MCP server tools are available**
+
+All operations MUST be performed using GitHub MCP server tools. If you attempt to use gh CLI, curl, or direct API calls, they will fail.
+
+---
+
 ## Overview
 
 This document provides complete step-by-step instructions for an AI agent with GitHub MCP server write access to create and populate the ALZ infrastructure repositories. All file contents are included inline.
@@ -22,37 +35,68 @@ The template repository enables consistent setup of new workload repositories wi
 
 - GitHub MCP server with write access configured
 - Access to create repositories in the `nathlan` organization
-- Ability to create files and commit to repositories
+- Ability to create files and commit to repositories via MCP tools
+
+## GitHub MCP Tools You Will Use
+
+Based on your GitHub MCP server capabilities, you should have access to tools for:
+
+1. **Repository Operations:**
+   - Creating repositories
+   - Configuring repository settings
+   - Managing repository properties (visibility, features, template status)
+
+2. **File Operations:**
+   - Creating files in repositories
+   - Committing files to repositories
+   - Reading file contents from existing repositories (e.g., `github-mcp-server-get_file_contents`)
+
+3. **Verification Operations:**
+   - Listing repository contents
+   - Checking repository existence
+   - Verifying repository properties
+
+**Note:** The exact MCP tool names depend on your MCP server implementation. Use the appropriate MCP tools available to you for these operations.
 
 ---
 
 ## Task 1: Create `nathlan/alz-subscriptions` Repository
 
-### Step 1.1: Create Repository
+### Step 1.1: Create Repository Using GitHub MCP
 
-Use GitHub MCP to create repository with these parameters:
+**Use your GitHub MCP server's repository creation tool** to create the repository with these specifications:
 
-```json
-{
-  "owner": "nathlan",
-  "name": "alz-subscriptions",
-  "description": "Azure Landing Zone subscription provisioning using Infrastructure as Code (Terraform)",
-  "visibility": "internal",
-  "has_issues": true,
-  "has_projects": true,
-  "has_wiki": false,
-  "has_discussions": false,
-  "allow_squash_merge": true,
-  "allow_merge_commit": false,
-  "allow_rebase_merge": true,
-  "delete_branch_on_merge": true,
-  "auto_init": true
-}
+**Repository Configuration:**
+```
+Owner: nathlan
+Name: alz-subscriptions
+Description: Azure Landing Zone subscription provisioning using Infrastructure as Code (Terraform)
+Visibility: internal
+Features:
+  - Issues: enabled
+  - Projects: enabled
+  - Wiki: disabled
+  - Discussions: disabled
+Settings:
+  - allow_squash_merge: true
+  - allow_merge_commit: false
+  - allow_rebase_merge: true
+  - delete_branch_on_merge: true
+  - auto_init: true (initialize with README)
 ```
 
-### Step 1.2: Create File Structure
+**MCP Tool Usage:** Use the appropriate MCP tool for repository creation (the exact tool name depends on your MCP server implementation, but it should be something like a repository creation or organization repository management tool).
 
-Create the following files in the `main` branch of `nathlan/alz-subscriptions`:
+**Expected Result:** Repository `nathlan/alz-subscriptions` created with internal visibility and specified settings.
+```
+
+### Step 1.2: Create Files Using GitHub MCP
+
+**Use your GitHub MCP server's file creation tool** to create the following files in the `main` branch of `nathlan/alz-subscriptions`.
+
+**MCP Tool Usage:** Use the appropriate MCP tool for creating files and committing them to the repository (typically a file creation or content update tool in your MCP server).
+
+Create the following files:
 
 #### File: `README.md`
 
@@ -583,27 +627,34 @@ Create an empty directory `landing-zones/` (you can add a `.gitkeep` file if nee
 
 ## Task 2: Create `nathlan/.github-workflows` Repository
 
-### Step 2.1: Create Repository
+### Step 2.1: Create Repository Using GitHub MCP
 
-Use GitHub MCP to create repository with these parameters:
+**Use your GitHub MCP server's repository creation tool** to create the repository with these specifications:
 
-```json
-{
-  "owner": "nathlan",
-  "name": ".github-workflows",
-  "description": "Reusable GitHub Actions workflows for Terraform deployments",
-  "visibility": "internal",
-  "has_issues": true,
-  "has_projects": false,
-  "has_wiki": false,
-  "has_discussions": false,
-  "auto_init": true
-}
+**Repository Configuration:**
+```
+Owner: nathlan
+Name: .github-workflows
+Description: Reusable GitHub Actions workflows for Terraform deployments
+Visibility: internal
+Features:
+  - Issues: enabled
+  - Projects: disabled
+  - Wiki: disabled
+  - Discussions: disabled
+Settings:
+  - auto_init: true (initialize with README)
 ```
 
-### Step 2.2: Create File Structure
+**MCP Tool Usage:** Use the appropriate MCP tool for repository creation.
 
-Create the following files in the `main` branch of `nathlan/.github-workflows`:
+**Expected Result:** Repository `nathlan/.github-workflows` created with internal visibility.
+
+### Step 2.2: Create Files Using GitHub MCP
+
+**Use your GitHub MCP server's file creation tool** to create the following files in the `main` branch of `nathlan/.github-workflows`.
+
+Create the following files:
 
 #### File: `README.md`
 
@@ -682,46 +733,52 @@ For questions or issues:
 
 #### File: `.github/workflows/azure-terraform-deploy.yml`
 
-**Note:** Copy the contents from the source repository at `.github/workflows/azure-terraform-deploy-reusable.yml` in `nathlan/.github-private`.
+**Note:** Copy the reusable workflow content from the source repository.
 
-The agent should read the file from:
-- Repository: `nathlan/.github-private`
-- Branch: `main`
-- Path: `.github/workflows/azure-terraform-deploy-reusable.yml`
+**MCP Tool Usage:**
+1. Use `github-mcp-server-get_file_contents` to read the file from:
+   - Repository: `nathlan/.github-private`
+   - Branch: `main`
+   - Path: `.github/workflows/azure-terraform-deploy-reusable.yml`
 
-And create it at:
-- Repository: `nathlan/.github-workflows`
-- Branch: `main`
-- Path: `.github/workflows/azure-terraform-deploy.yml`
+2. Then use your MCP file creation tool to create it at:
+   - Repository: `nathlan/.github-workflows`
+   - Branch: `main`
+   - Path: `.github/workflows/azure-terraform-deploy.yml`
 
 ---
 
 ## Task 3: Create `nathlan/alz-workload-template` Repository
 
-### Step 3.1: Create Template Repository
+### Step 3.1: Create Template Repository Using GitHub MCP
 
-Use GitHub MCP to create repository with these parameters:
+**Use your GitHub MCP server's repository creation tool** to create the repository with these specifications:
 
-```json
-{
-  "owner": "nathlan",
-  "name": "alz-workload-template",
-  "description": "Template repository for ALZ workload repositories with pre-configured Terraform workflows",
-  "visibility": "internal",
-  "has_issues": true,
-  "has_projects": false,
-  "has_wiki": false,
-  "has_discussions": false,
-  "is_template": true,
-  "auto_init": true
-}
+**Repository Configuration:**
+```
+Owner: nathlan
+Name: alz-workload-template
+Description: Template repository for ALZ workload repositories with pre-configured Terraform workflows
+Visibility: internal
+Features:
+  - Issues: enabled
+  - Projects: disabled
+  - Wiki: disabled
+  - Discussions: disabled
+Special Settings:
+  - is_template: true (CRITICAL - marks this as a GitHub template repository)
+  - auto_init: true (initialize with README)
 ```
 
-**Important:** Note the `"is_template": true` parameter - this makes it a GitHub template repository.
+**IMPORTANT:** The `is_template: true` setting is CRITICAL - it enables the "Use this template" button on GitHub and allows creating new repositories from this template.
 
-### Step 3.2: Create File Structure
+**MCP Tool Usage:** Use the appropriate MCP tool for repository creation with template flag.
 
-Create the following files in the `main` branch of `nathlan/alz-workload-template`:
+**Expected Result:** Repository `nathlan/alz-workload-template` created as a template repository.
+
+### Step 3.2: Create Files Using GitHub MCP
+
+**Use your GitHub MCP server's file creation tool** to create the following files in the `main` branch of `nathlan/alz-workload-template`.
 
 #### File: `README.md`
 
@@ -1061,59 +1118,72 @@ provider "azurerm" {
 }
 ```
 
-### Step 3.3: Mark as Template
+### Step 3.3: Verify Template Status
 
-Ensure the repository is marked as a template repository. This is set via the `"is_template": true` parameter during creation, but can also be configured via:
-- Repository Settings → Template repository checkbox
-- Or via GitHub API: `PATCH /repos/nathlan/alz-workload-template` with `{"is_template": true}`
+Ensure the repository is marked as a template repository.
+
+**MCP Tool Usage:** Use your GitHub MCP tool to verify the repository property `is_template` is set to `true`. If it's not set (which shouldn't happen if you specified it correctly during creation), you may need to update the repository settings using your MCP tool.
+
+**Note:** The template status should have been set during creation in Step 3.1. This is just a verification step.
 
 ---
 
 ## Implementation Steps Summary
 
-For the agent to execute:
+**REMINDER: Use GitHub MCP Server Tools ONLY**
+- ❌ Do NOT use gh CLI
+- ❌ Do NOT use curl or wget
+- ❌ Do NOT use direct API calls
+- ✅ ONLY use GitHub MCP server tools
+
+## Implementation Steps Summary
+
+**REMINDER: Use GitHub MCP Server Tools ONLY**
+- ❌ Do NOT use gh CLI
+- ❌ Do NOT use curl or wget
+- ❌ Do NOT use direct API calls
+- ✅ ONLY use GitHub MCP server tools
+
+For the agent to execute using GitHub MCP tools:
 
 1. **Create `nathlan/alz-subscriptions` repository**
-   - Use repository creation API/MCP
+   - Use MCP repository creation tool
    - Set internal visibility
    - Enable issues and projects
+   - Set repository properties as specified
 
 2. **Populate `alz-subscriptions` with files**
-   - Create 8 files listed above in root directory
+   - Use MCP file creation tool for each of the 8 files
    - Create `landing-zones/` directory
    - Commit message: "Initial commit: ALZ subscription vending infrastructure"
 
 3. **Create `nathlan/.github-workflows` repository**
-   - Use repository creation API/MCP
+   - Use MCP repository creation tool
    - Set internal visibility
    - Enable issues
 
 4. **Populate `.github-workflows` with files**
-   - Create `README.md` in root
-   - Create `.github/workflows/` directory
-   - Copy `azure-terraform-deploy-reusable.yml` from `.github-private` to `azure-terraform-deploy.yml`
+   - Use MCP file creation tool for `README.md`
+   - Use `github-mcp-server-get_file_contents` to read from `.github-private`
+   - Use MCP file creation tool to create `azure-terraform-deploy.yml`
    - Commit message: "Initial commit: Add reusable Azure Terraform workflow"
 
 5. **Create `nathlan/alz-workload-template` repository**
-   - Use repository creation API/MCP
+   - Use MCP repository creation tool
    - Set internal visibility
-   - **Set `is_template: true`** (critical for template functionality)
+   - **Set `is_template: true`** (CRITICAL for template functionality)
    - Enable issues
 
 6. **Populate `alz-workload-template` with files**
-   - Create `README.md` in root
-   - Create `.gitignore` in root
+   - Use MCP file creation tool for each of the 7 files
    - Create `.github/workflows/` directory
-   - Create `terraform-deploy.yml` in `.github/workflows/`
-   - Create `terraform/` directory
-   - Create 4 Terraform files in `terraform/` (main.tf, variables.tf, outputs.tf, terraform.tf)
+   - Create `terraform/` directory with 4 files
    - Commit message: "Initial commit: ALZ workload template with Terraform workflow"
 
-7. **Verify repositories**
-   - Check all three repositories are accessible
-   - Verify all files are present
-   - Confirm default branch is `main`
-   - **Verify `alz-workload-template` is marked as a template repository**
+7. **Verify implementation**
+   - Use MCP tools to check all three repositories exist
+   - Verify all files are present using MCP file listing tools
+   - Confirm `alz-workload-template` has `is_template: true` using MCP repository info tools
 
 ---
 
@@ -1161,45 +1231,60 @@ No additional configuration required. This is a template repository ready to be 
 
 ---
 
-## Verification
+## Verification Using GitHub MCP Tools
 
-To verify successful implementation:
+After completing all tasks, verify the implementation using GitHub MCP server tools:
 
-```bash
-# Check repositories exist
-curl -H "Authorization: token $GITHUB_TOKEN" \
-  https://api.github.com/repos/nathlan/alz-subscriptions
+### 1. Verify Repositories Exist
 
-curl -H "Authorization: token $GITHUB_TOKEN" \
-  https://api.github.com/repos/nathlan/.github-workflows
+**Use your GitHub MCP tools to check that all three repositories exist:**
 
-curl -H "Authorization: token $GITHUB_TOKEN" \
-  https://api.github.com/repos/nathlan/alz-workload-template
+- Check `nathlan/alz-subscriptions` exists
+- Check `nathlan/.github-workflows` exists
+- Check `nathlan/alz-workload-template` exists
 
-# Verify template repo is marked as template
-curl -H "Authorization: token $GITHUB_TOKEN" \
-  https://api.github.com/repos/nathlan/alz-workload-template | jq '.is_template'
-# Expected: true
+**MCP Tool Usage:** Use repository listing or search tools available in your MCP server.
 
-# List files in alz-subscriptions
-curl -H "Authorization: token $GITHUB_TOKEN" \
-  https://api.github.com/repos/nathlan/alz-subscriptions/contents
+### 2. Verify Template Repository Status
 
-# List workflows in .github-workflows
-curl -H "Authorization: token $GITHUB_TOKEN" \
-  https://api.github.com/repos/nathlan/.github-workflows/contents/.github/workflows
+**Check that `alz-workload-template` is marked as a template repository:**
 
-# List files in template repo
-curl -H "Authorization: token $GITHUB_TOKEN" \
-  https://api.github.com/repos/nathlan/alz-workload-template/contents
-```
+**MCP Tool Usage:** Use repository information/properties tool to verify `is_template` property is `true`.
 
-Expected responses:
-- All three repositories return 200 OK with repository metadata
-- `alz-workload-template.is_template` is `true`
-- `alz-subscriptions` contains: main.tf, variables.tf, outputs.tf, backend.tf, README.md, .gitignore, .terraform-version, terraform.tfvars.example, landing-zones/
-- `.github-workflows` contains: README.md, .github/workflows/azure-terraform-deploy.yml
-- `alz-workload-template` contains: README.md, .gitignore, .github/workflows/terraform-deploy.yml, terraform/ (with 4 files)
+### 3. Verify Files Were Created
+
+**For `nathlan/alz-subscriptions`, verify these files exist:**
+- `README.md`
+- `main.tf`
+- `variables.tf`
+- `outputs.tf`
+- `backend.tf`
+- `.gitignore`
+- `.terraform-version`
+- `terraform.tfvars.example`
+- `landing-zones/` (directory)
+
+**For `nathlan/.github-workflows`, verify these files exist:**
+- `README.md`
+- `.github/workflows/azure-terraform-deploy.yml`
+
+**For `nathlan/alz-workload-template`, verify these files exist:**
+- `README.md`
+- `.gitignore`
+- `.github/workflows/terraform-deploy.yml`
+- `terraform/main.tf`
+- `terraform/variables.tf`
+- `terraform/outputs.tf`
+- `terraform/terraform.tf`
+
+**MCP Tool Usage:** Use file listing or content retrieval tools to verify all files are present in each repository.
+
+### Expected Results
+
+- ✅ All three repositories created successfully
+- ✅ `alz-workload-template` has `is_template: true`
+- ✅ All 17 files created across the 3 repositories
+- ✅ Files contain the correct content as specified in this document
 
 ---
 
@@ -1230,13 +1315,39 @@ Expected responses:
 
 ## Using the Template Repository
 
-When the ALZ vending orchestrator (or GitHub config agent) creates a new workload repository, it should use this template:
+When the ALZ vending orchestrator (or GitHub config agent) creates a new workload repository, it should use the template via GitHub MCP tools.
 
-### Via GitHub API:
+### Creating Repository from Template Using GitHub MCP
 
-```bash
+**Use your GitHub MCP server's template generation tool** to create a new repository from the template:
+
+**Template Configuration:**
+```
+Template Repository: nathlan/alz-workload-template
+New Repository:
+  - Owner: nathlan
+  - Name: [workload-specific-name]
+  - Description: Azure Landing Zone for [workload-name]
+  - Visibility: internal
+  - Include all branches: false
+```
+
+**MCP Tool Usage:** Use the template repository generation tool (the exact tool name depends on your MCP implementation, but it should support creating repositories from templates).
+
+### Alternative Methods (For Reference Only)
+
+**Note:** These methods require access to GitHub UI or API which you may not have. They are documented here for completeness, but you should use the GitHub MCP template generation tool.
+
+**Via GitHub UI (if accessible):**
+1. Navigate to `https://github.com/nathlan/alz-workload-template`
+2. Click "Use this template" button
+3. Fill in new repository name
+4. Click "Create repository from template"
+
+**Via GitHub API (if accessible):**
+```
 POST /repos/nathlan/alz-workload-template/generate
-{
+Body: {
   "owner": "nathlan",
   "name": "workload-app-name",
   "description": "Azure Landing Zone for app-name workload",
@@ -1245,14 +1356,7 @@ POST /repos/nathlan/alz-workload-template/generate
 }
 ```
 
-### Via GitHub UI:
-
-1. Navigate to `https://github.com/nathlan/alz-workload-template`
-2. Click "Use this template" button
-3. Fill in new repository name
-4. Click "Create repository from template"
-
-### Benefits:
+### Benefits of Using Template:
 
 - New workload repositories start with complete workflow setup
 - Terraform directory structure pre-configured
