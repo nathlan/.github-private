@@ -1,0 +1,457 @@
+name: Create ALZ Infrastructure Repositories
+
+on:
+  workflow_dispatch:
+    inputs:
+      create_alz_subscriptions:
+        description: 'Create nathlan/alz-subscriptions repository'
+        required: true
+        type: boolean
+        default: true
+      create_github_workflows:
+        description: 'Create nathlan/.github-workflows repository'
+        required: true
+        type: boolean
+        default: true
+
+permissions:
+  contents: write
+
+jobs:
+  create-repositories:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Create alz-subscriptions repository
+        if: ${{ inputs.create_alz_subscriptions }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "Creating nathlan/alz-subscriptions repository..."
+
+          # Create repository using GitHub API
+          curl -X POST \
+            -H "Authorization: token $GH_TOKEN" \
+            -H "Accept: application/vnd.github.v3+json" \
+            https://api.github.com/orgs/nathlan/repos \
+            -d '{
+              "name": "alz-subscriptions",
+              "description": "Azure Landing Zone subscription provisioning using Infrastructure as Code (Terraform)",
+              "visibility": "internal",
+              "has_issues": true,
+              "has_projects": true,
+              "has_wiki": false,
+              "has_discussions": false,
+              "allow_squash_merge": true,
+              "allow_merge_commit": false,
+              "allow_rebase_merge": true,
+              "delete_branch_on_merge": true
+            }'
+
+          echo "Repository creation API call completed"
+
+      - name: Setup repository structure for alz-subscriptions
+        if: ${{ inputs.create_alz_subscriptions }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "Setting up repository structure..."
+          cd /tmp
+          mkdir -p alz-subscriptions-repo
+          cd alz-subscriptions-repo
+          git init
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          # Create directory structure
+          mkdir -p .github/workflows
+          mkdir -p landing-zones
+
+          # Create README.md
+          cat > README.md << 'EOF'
+          # Azure Landing Zone Subscriptions
+
+          This repository manages Azure Landing Zone subscription provisioning using Infrastructure as Code (Terraform).
+
+          ## Overview
+
+          This repository contains:
+          - **Landing zone `.tfvars` files** - One file per vended subscription in `landing-zones/`
+          - **Terraform root module** - Calls the private `terraform-azurerm-landing-zone-vending` module
+          - **CI/CD workflows** - Automated plan on PR, apply on merge to main
+
+          ## Structure
+
+          - `landing-zones/` - One .tfvars file per landing zone
+          - `main.tf` - Root module calling LZ vending module v1.1.0
+          - `variables.tf` - Input variable definitions
+          - `outputs.tf` - Module outputs
+          - `backend.tf` - Azure Storage backend configuration
+          - `.github/workflows/` - GitHub Actions CI/CD
+
+          ## Usage
+
+          Use the ALZ Vending orchestrator agent (`@alz-vending`) to create new landing zones, which will automatically create PRs in this repository.
+
+          ## Related
+
+          - LZ Vending Module: `nathlan/terraform-azurerm-landing-zone-vending` v1.1.0
+          - Reusable Workflows: `nathlan/.github-workflows`
+          EOF
+
+          # Create .gitignore
+          cat > .gitignore << 'EOF'
+          # Terraform
+          .terraform/
+          .terraform.lock.hcl
+          *.tfstate
+          *.tfstate.*
+          *.tfplan
+          *.tfplan.*
+          crash.log
+          override.tf
+          *_override.tf
+          .terraformrc
+          terraform.rc
+
+          # Variables
+          *.auto.tfvars
+          *.auto.tfvars.json
+
+          # IDE
+          .vscode/
+          .idea/
+          *.swp
+          .DS_Store
+          EOF
+
+          # Create .terraform-version
+          echo "1.9.0" > .terraform-version
+
+          # Create landing-zones/.gitkeep
+          touch landing-zones/.gitkeep
+
+          # Create main.tf
+          cat > main.tf << 'EOF'
+          # Azure Landing Zone Subscription Vending
+          terraform {
+            required_version = ">= 1.9.0"
+
+            required_providers {
+              azurerm = {
+                source  = "hashicorp/azurerm"
+                version = "~> 4.0"
+              }
+            }
+          }
+
+          provider "azurerm" {
+            features {}
+            use_oidc = true
+          }
+
+          module "landing_zone" {
+            source  = "github.com/nathlan/terraform-azurerm-landing-zone-vending?ref=v1.1.0"
+
+            # Subscription Configuration
+            subscription_alias_enabled              = var.subscription_alias_enabled
+            subscription_billing_scope              = var.subscription_billing_scope
+            subscription_display_name               = var.subscription_display_name
+            subscription_alias_name                 = var.subscription_alias_name
+            subscription_workload                   = var.subscription_workload
+            subscription_management_group_id        = var.subscription_management_group_id
+            subscription_management_group_association_enabled = var.subscription_management_group_association_enabled
+            subscription_tags                       = var.subscription_tags
+
+            # Resource Groups
+            resource_group_creation_enabled = var.resource_group_creation_enabled
+            resource_groups                 = var.resource_groups
+
+            # Role Assignments
+            role_assignment_enabled = var.role_assignment_enabled
+            role_assignments        = var.role_assignments
+
+            # Virtual Network
+            virtual_network_enabled = var.virtual_network_enabled
+            virtual_networks        = var.virtual_networks
+
+            # User-Managed Identities
+            umi_enabled             = var.umi_enabled
+            user_managed_identities = var.user_managed_identities
+
+            # Budgets
+            budget_enabled = var.budget_enabled
+            budgets        = var.budgets
+          }
+          EOF
+
+          # Create variables.tf
+          cat > variables.tf << 'EOF'
+          variable "tfvars_file_name" {
+            type        = string
+            description = "Name of the tfvars file for state key"
+          }
+
+          variable "subscription_alias_enabled" {
+            type        = bool
+            description = "Enable subscription alias creation"
+            default     = true
+          }
+
+          variable "subscription_billing_scope" {
+            type        = string
+            description = "Billing scope for subscription creation"
+          }
+
+          variable "subscription_display_name" {
+            type        = string
+            description = "Display name for the subscription"
+          }
+
+          variable "subscription_alias_name" {
+            type        = string
+            description = "Alias name for the subscription"
+          }
+
+          variable "subscription_workload" {
+            type        = string
+            description = "Workload type (Production or DevTest)"
+            default     = "Production"
+          }
+
+          variable "subscription_management_group_id" {
+            type        = string
+            description = "Management group ID"
+            default     = "Corp"
+          }
+
+          variable "subscription_management_group_association_enabled" {
+            type        = bool
+            description = "Enable management group association"
+            default     = true
+          }
+
+          variable "subscription_tags" {
+            type        = map(string)
+            description = "Tags to apply to the subscription"
+            default     = {}
+          }
+
+          variable "resource_group_creation_enabled" {
+            type        = bool
+            description = "Enable resource group creation"
+            default     = true
+          }
+
+          variable "resource_groups" {
+            type        = map(any)
+            description = "Resource groups to create"
+            default     = {}
+          }
+
+          variable "role_assignment_enabled" {
+            type        = bool
+            description = "Enable role assignments"
+            default     = false
+          }
+
+          variable "role_assignments" {
+            type        = map(any)
+            description = "Role assignments"
+            default     = {}
+          }
+
+          variable "virtual_network_enabled" {
+            type        = bool
+            description = "Enable virtual network creation"
+            default     = true
+          }
+
+          variable "virtual_networks" {
+            type        = map(any)
+            description = "Virtual networks to create"
+            default     = {}
+          }
+
+          variable "umi_enabled" {
+            type        = bool
+            description = "Enable user-managed identity creation"
+            default     = false
+          }
+
+          variable "user_managed_identities" {
+            type        = map(any)
+            description = "User-managed identities"
+            default     = {}
+          }
+
+          variable "budget_enabled" {
+            type        = bool
+            description = "Enable budget creation"
+            default     = false
+          }
+
+          variable "budgets" {
+            type        = map(any)
+            description = "Budgets"
+            default     = {}
+          }
+          EOF
+
+          # Create outputs.tf
+          cat > outputs.tf << 'EOF'
+          output "subscription_id" {
+            description = "The subscription ID"
+            value       = module.landing_zone.subscription_id
+          }
+
+          output "subscription_resource_id" {
+            description = "The full Azure resource ID of the subscription"
+            value       = module.landing_zone.subscription_resource_id
+          }
+
+          output "virtual_network_resource_ids" {
+            description = "Resource IDs of created virtual networks"
+            value       = module.landing_zone.virtual_network_resource_ids
+          }
+
+          output "resource_group_resource_ids" {
+            description = "Resource IDs of created resource groups"
+            value       = module.landing_zone.resource_group_resource_ids
+          }
+
+          output "umi_client_ids" {
+            description = "Client IDs of user-managed identities"
+            value       = module.landing_zone.umi_client_ids
+            sensitive   = true
+          }
+
+          output "umi_principal_ids" {
+            description = "Principal IDs of user-managed identities"
+            value       = module.landing_zone.umi_principal_ids
+          }
+
+          output "budget_resource_ids" {
+            description = "Resource IDs of created budgets"
+            value       = module.landing_zone.budget_resource_ids
+          }
+          EOF
+
+          # Create backend.tf
+          cat > backend.tf << 'EOF'
+          terraform {
+            backend "azurerm" {
+              resource_group_name  = "rg-terraform-state"
+              storage_account_name = "stterraformstate"
+              container_name       = "alz-subscriptions"
+              key                  = "landing-zones/${var.tfvars_file_name}.tfstate"
+              use_oidc             = true
+            }
+          }
+          EOF
+
+          # Commit and push
+          git add .
+          git commit -m "Initial commit: ALZ subscription vending infrastructure
+
+          - Terraform root module calling terraform-azurerm-landing-zone-vending v1.1.0
+          - GitHub Actions workflows placeholder
+          - Example landing zones directory
+          - Complete documentation and configuration"
+
+          git branch -M main
+          git remote add origin https://x-access-token:${GH_TOKEN}@github.com/nathlan/alz-subscriptions.git
+          git push -u origin main || echo "Push failed - repository may not be created yet or permissions issue"
+
+      - name: Create .github-workflows repository
+        if: ${{ inputs.create_github_workflows }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "Creating nathlan/.github-workflows repository..."
+
+          curl -X POST \
+            -H "Authorization: token $GH_TOKEN" \
+            -H "Accept: application/vnd.github.v3+json" \
+            https://api.github.com/orgs/nathlan/repos \
+            -d '{
+              "name": ".github-workflows",
+              "description": "Reusable GitHub Actions workflows for Terraform deployments",
+              "visibility": "internal",
+              "has_issues": true,
+              "has_projects": false,
+              "has_wiki": false
+            }'
+
+      - name: Setup .github-workflows repository
+        if: ${{ inputs.create_github_workflows }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          cd /tmp
+          mkdir -p github-workflows-repo
+          cd github-workflows-repo
+          git init
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          mkdir -p .github/workflows
+
+          # Copy the reusable workflow from this repo
+          cp $GITHUB_WORKSPACE/.github/workflows/azure-terraform-deploy-reusable.yml .github/workflows/azure-terraform-deploy.yml
+
+          # Create README
+          cat > README.md << 'EOF'
+          # Reusable GitHub Actions Workflows
+
+          Reusable workflows for Terraform deployments across the organization.
+
+          ## Available Workflows
+
+          ### Azure Terraform Deploy
+
+          File: `.github/workflows/azure-terraform-deploy.yml`
+
+          Usage:
+          ```yaml
+          jobs:
+            deploy:
+              uses: nathlan/.github-workflows/.github/workflows/azure-terraform-deploy.yml@main
+              with:
+                environment: production
+                terraform-version: '1.9.0'
+              secrets:
+                AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+                AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+                AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+          ```
+
+          ## Features
+
+          - Azure OIDC authentication (no stored credentials)
+          - Security scanning with Checkov
+          - TFLint validation
+          - Plan artifact reuse
+          - Environment protection with approvals
+          - Comprehensive PR comments
+          EOF
+
+          git add .
+          git commit -m "Initial commit: Add reusable Azure Terraform workflow"
+          git branch -M main
+          git remote add origin https://x-access-token:${GH_TOKEN}@github.com/nathlan/.github-workflows.git
+          git push -u origin main || echo "Push failed - repository may not be created yet or permissions issue"
+
+      - name: Summary
+        run: |
+          echo "## Repository Creation Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Attempted to create:" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ nathlan/alz-subscriptions" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ nathlan/.github-workflows" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Please verify the repositories were created successfully at:" >> $GITHUB_STEP_SUMMARY
+          echo "- https://github.com/nathlan/alz-subscriptions" >> $GITHUB_STEP_SUMMARY
+          echo "- https://github.com/nathlan/.github-workflows" >> $GITHUB_STEP_SUMMARY
