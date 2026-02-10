@@ -27,6 +27,20 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v5
 
+      - name: Generate token for shared-standards
+        id: shared-standards-token
+        uses: actions/create-github-app-token@v2
+        with:
+          app-id: ${{ vars.SOURCE_REPO_SYNC_APP_ID }}
+          private-key: ${{ secrets.SOURCE_REPO_SYNC_APP_PRIVATE_KEY }}
+          owner: nathlan
+          repositories: shared-standards
+
+      - name: Export GH_TOKEN
+        env:
+          GH_TOKEN: ${{ steps.shared-standards-token.outputs.token }}
+        run: echo "GH_TOKEN=$GH_TOKEN" >> $GITHUB_ENV
+
       - name: Setup Node.js for NPX
         uses: actions/setup-node@v4
 
