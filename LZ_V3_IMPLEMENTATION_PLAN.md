@@ -154,7 +154,7 @@ The module must be recreated with these specifications:
 ```
 Use: github-mcp-server-list_branches
 Repo: nathlan/terraform-azurerm-landing-zone-vending
-Expected: List of branches including feature/add-ip-address-automation
+Expected: List of branches including main
 ```
 
 ### Step 2: Create New Branch
@@ -164,7 +164,7 @@ Parameters:
   owner: nathlan
   repo: terraform-azurerm-landing-zone-vending
   branch: feature/v3-naming-and-smart-defaults
-  from_branch: feature/add-ip-address-automation
+  from_branch: main
 ```
 
 ### Step 3: Push All Files

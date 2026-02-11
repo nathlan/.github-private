@@ -281,7 +281,7 @@ This is a MAJOR version release with breaking changes. Existing users will need 
 
 - **Azure Naming Module Integration**: All resources (except subscriptions/budgets/RGs) use Azure naming conventions
 - **Time Provider for Budgets**: Idempotent budget timestamps using time_static and time_offset
-- **Smart Defaults**: 70% code reduction (95 → 22 lines per landing zone)
+- **Smart Defaults**: 70% code reduction (95 → 25 lines per landing zone)
 - **Landing Zones Map**: Support multiple landing zones in single module call
 - **Flattened Networking**: Simplified VNet structure (always 1 spoke per LZ)
 - **Subnet Support**: Automatic CIDR calculation from VNet address space

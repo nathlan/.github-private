@@ -10,17 +10,20 @@ Refactored Landing Zone vending module with:
 
 ## Files in This PR
 
-### 1. Module Files Placeholder
-📁 **`lz-module-v3-refactor/`** - Partial module structure (CHANGELOG & examples only)
+### 1. Partial Module Structure (Reference Only)
+📁 **`lz-module-v3-refactor/`** - Contains CHANGELOG & examples only
 - ⚠️ **Note**: Core .tf files were created in /tmp/ but not committed here
 - This repo should NOT contain .tf files (per pre-commit hooks)
 - Full module with all .tf files must be recreated for deployment
 - See `LZ_V3_IMPLEMENTATION_PLAN.md` for complete file list
 
-### 2. Deployment Guide
+### 2. PR Template
+📄 **`LZ_V3_PR_TEMPLATE.md`** - Template for external repo pull request
+
+### 3. Deployment Guide
 📄 **`LZ_V3_IMPLEMENTATION_PLAN.md`** - Instructions for pushing to external repo
 
-### 3. Commit Message
+### 4. Commit Message
 📄 **`LZ_V3_COMMIT_MESSAGE.txt`** - Pre-written commit message for external repo
 
 ### 4. Module Tracking
@@ -77,7 +80,7 @@ See `LZ_V3_NAMING_REQUIREMENTS.md` for complete details.
 
 ## Key Changes Summary
 
-**Before (v2.x)**: 95 lines of configuration per landing zone
+**Before (v2.x)**: 95 lines of configuration per landing zone  
 **After (v3.0)**: 25 lines per landing zone
 
 Example:
