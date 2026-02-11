@@ -214,44 +214,64 @@ subnets = {
 module "naming" {
   source  = "Azure/naming/azurerm"
   version = "~> 0.4.3"
-
-  suffix = ["${each.value.workload}", "${each.value.env}"]
+  
+  for_each = var.landing_zones
+  suffix   = [each.value.workload, each.value.env]
 }
 
-# main.tf - Use for all resources
-resource "azurerm_subscription" "this" {
-  subscription_name = module.naming.subscription.name  # sub-example-api-prod
-  # ...
+# main.tf - Resource abbreviations for types NOT in naming module
+locals {
+  resource_abbreviations = {
+    subscription   = "sub"
+    budget         = "budget"
+    resource_group = "rg"
+  }
 }
 
-resource "azurerm_resource_group" "identity" {
-  name = module.naming.resource_group.name_unique  # rg-example-api-prod-identity-abc123
-  # ...
+# Custom naming for subscriptions (NOT in naming module)
+locals {
+  subscription_names = {
+    for lz_key, lz in var.landing_zones : 
+      lz_key => "${local.resource_abbreviations.subscription}-${lz.workload}-${lz.env}"
+  }
 }
 
+# Custom naming for resource groups (purpose prefix pattern)
+resource_groups = {
+  rg_identity = {
+    name = "${local.resource_abbreviations.resource_group}-identity-${each.value.workload}-${each.value.env}"
+  }
+  rg_network = {
+    name = "${local.resource_abbreviations.resource_group}-network-${each.value.workload}-${each.value.env}"
+  }
+}
+
+# Naming module for virtual network
 resource "azurerm_virtual_network" "spoke" {
-  name = module.naming.virtual_network.name  # vnet-example-api-prod
+  name = module.naming[each.key].virtual_network.name  # vnet-example-api-prod
   # ...
 }
 
+# Naming module for user assigned identity (with suffix)
 resource "azurerm_user_assigned_identity" "plan" {
-  name = module.naming.user_assigned_identity.name  # umi-example-api-prod-plan
+  name = "${module.naming[each.key].user_assigned_identity.name}-plan"  # id-example-api-prod-plan
   # ...
 }
 
+# Custom naming for budgets (consumption_budget output doesn't exist)
 resource "azurerm_consumption_budget_subscription" "monthly" {
-  name = module.naming.consumption_budget.name  # budget-example-api-prod
+  name = "${local.resource_abbreviations.budget}-${each.value.workload}-${each.value.env}"  # budget-example-api-prod
   # ...
 }
 ```
 
 #### Resources to Name Automatically
-- Subscriptions: `sub-{workload}-{env}`
-- Resource Groups: `rg-{workload}-{env}-{purpose}` (identity, network)
-- Virtual Networks: `vnet-{workload}-{env}`
-- Subnets: `snet-{name}` (from config) or `snet-{workload}-{env}-{n}`
-- User Managed Identities: `umi-{workload}-{env}-{purpose}` (plan, deploy)
-- Budgets: `budget-{workload}-{env}`
+- Subscriptions: `sub-{workload}-{env}` (custom - NOT in naming module)
+- Resource Groups: `rg-{purpose}-{workload}-{env}` (custom with purpose prefix)
+- Virtual Networks: `vnet-{workload}-{env}` (naming module)
+- Subnets: `snet-{workload}-{env}-{name}` (naming module)
+- User Managed Identities: `id-{workload}-{env}-{purpose}` (naming module + suffix)
+- Budgets: `budget-{workload}-{env}` (custom - consumption_budget output doesn't exist)
 - Federated Credentials: `oidc-gh-{repository}`
 
 ### 3. Time Provider for Budget Timestamps
@@ -331,7 +351,7 @@ resource_groups = {
 # Auto-create plan and deploy UMIs with sensible defaults
 user_managed_identities = {
   plan = {
-    # name: umi-{workload}-{env}-plan
+    # name: id-{workload}-{env}-plan
     resource_group_key = "rg_identity"
     role_assignments = {
       subscription_reader = {
@@ -340,7 +360,7 @@ user_managed_identities = {
     }
   }
   deploy = {
-    # name: umi-{workload}-{env}-deploy
+    # name: id-{workload}-{env}-deploy
     resource_group_key = "rg_identity"
     role_assignments = {
       subscription_owner = {
