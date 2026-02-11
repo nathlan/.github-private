@@ -1,0 +1,35 @@
+# Configuration for alz-workload-template repository
+# This file configures the Azure Landing Zone workload template repository
+
+# GitHub organization name
+github_organization = "nathlan"
+
+# Repository configuration
+repository_name        = "alz-workload-template"
+repository_description = "Template repository for ALZ workload repositories with pre-configured Terraform workflows"
+repository_visibility  = "internal"
+
+# Repository topics for discoverability
+repository_topics = [
+  "azure",
+  "terraform",
+  "landing-zone",
+  "template"
+]
+
+# Required status checks that must pass before merging
+required_status_checks = [
+  "validate",  # Terraform validation
+  "security",  # Security scanning (Checkov)
+  "plan"       # Terraform plan
+]
+
+# Teams with maintain access to the repository
+team_maintainers = [
+  "platform-engineering"
+]
+
+# Teams allowed to push to protected branches
+push_allowance_teams = [
+  "platform-engineering"
+]
