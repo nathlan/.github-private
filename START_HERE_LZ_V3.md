@@ -28,34 +28,21 @@ Refactored Landing Zone vending module with:
 
 ## What to Do Next
 
-### Deploy to External Repository
+### Use Terraform Module Creator Agent
 
-**Target**: `nathlan/terraform-azurerm-landing-zone-vending`
-**Branch**: `feature/v3-naming-and-smart-defaults`
+An agent with GitHub MCP write access should:
+
+1. **Read** `LZ_V3_IMPLEMENTATION_PLAN.md` for complete specifications
+2. **Recreate** the module files from specifications (all .tf files, configs, examples)
+3. **Use GitHub MCP server** to:
+   - Create branch `feature/v3-naming-and-smart-defaults` in `nathlan/terraform-azurerm-landing-zone-vending`
+   - Push all module files
+   - Create PR with description from `LZ_V3_COMMIT_MESSAGE.txt`
+
+**Target Repository**: `nathlan/terraform-azurerm-landing-zone-vending`
 **Version**: v3.0.0 (BREAKING CHANGES)
 
-**Option 1: Use GitHub MCP Agent**
-- Read `LZ_V3_IMPLEMENTATION_PLAN.md` for step-by-step instructions
-- Agent with write access can push all files and create PR
-
-**Option 2: Manual Git Push**
-```bash
-# Clone the target repo
-git clone git@github.com:nathlan/terraform-azurerm-landing-zone-vending.git
-cd terraform-azurerm-landing-zone-vending
-
-# Create branch
-git checkout -b feature/v3-naming-and-smart-defaults
-
-# Copy module files
-cp -r /path/to/lz-module-v3-refactor/* .
-
-# Commit with provided message
-git commit -F /path/to/LZ_V3_COMMIT_MESSAGE.txt
-
-# Push and create PR
-git push origin feature/v3-naming-and-smart-defaults
-```
+**No manual git commands or bash scripts needed** - the agent handles everything via GitHub MCP server.
 
 ## Key Changes Summary
 

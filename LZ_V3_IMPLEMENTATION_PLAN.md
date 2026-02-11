@@ -1,22 +1,27 @@
 # Landing Zone Module v3.0.0 - Implementation Plan
 
-## ⚠️ Important Note
+## Instructions for Agent
 
-The actual Terraform `.tf` files were created during development but are NOT in this repository because:
-- Pre-commit hooks prevent .tf files in .github-private repo (correct behavior)
-- Files were created in /tmp/ and are now lost
-- **The module must be recreated** using the specifications in this document
+This document contains complete specifications for the terraform-module-creator agent to:
+1. **Recreate** all module files from these specifications
+2. **Use GitHub MCP server** (write access required) to push to external repository
+3. **Create PR** for v3.0.0 release
 
-This document contains the complete design and specifications to recreate the module.
+## Why Recreate?
+
+The `.tf` files were created during development but are NOT in this repository because:
+- Pre-commit hooks correctly prevent .tf files in .github-private repo
+- Files were created in /tmp/ and are ephemeral
+- **Agent will recreate from specifications** in this document
 
 ## Status
 ✅ Module design complete and validated
 ✅ Time provider integration specified
 ✅ Azure naming module integration specified
-⚠️ Module files need to be recreated from this specification
+✅ Ready for agent to recreate and deploy
 
 ## Mission
-Create and push the refactored terraform-azurerm-landing-zone-vending module to GitHub as v3.0.0 with breaking changes.
+Use terraform-module-creator agent to recreate and push the refactored terraform-azurerm-landing-zone-vending module to GitHub as v3.0.0 with breaking changes.
 
 ## Target Repository
 - **Repo**: `nathlan/terraform-azurerm-landing-zone-vending`
@@ -153,40 +158,27 @@ See file: `/home/runner/work/.github-private/.github-private/LZ_V3_PR_TEMPLATE.m
 ✅ checkov (Passed: 5, Failed: 0)
 ✅ terraform-docs generated
 
-## Post-Push Actions
-1. Verify PR created successfully
+## Post-Deployment Actions
+1. Verify PR created successfully in external repository
 2. Review changes in GitHub UI
-3. Request reviews if needed
-4. Merge when approved
-5. Automated workflow will create v3.0.0 tag
-6. Update MODULE_TRACKING.md
+3. Merge when approved (or request reviews)
+4. Automated workflow will create v3.0.0 tag
+5. Update MODULE_TRACKING.md in .github-private repo
 
-## Fallback: Manual Git Commands
+## Agent Instructions Summary
 
-If GitHub MCP write operations are not available:
+The terraform-module-creator agent should:
 
-```bash
-cd /home/runner/work/.github-private/.github-private
-git clone git@github.com:nathlan/terraform-azurerm-landing-zone-vending.git temp-lz-clone
-cd temp-lz-clone
-git fetch origin
-git checkout -b feature/v3-naming-and-smart-defaults origin/feature/add-ip-address-automation
-cp -r ../lz-module-v3-refactor/* .
-git add .
-git commit -F ../LZ_V3_COMMIT_MESSAGE.txt
-git push origin feature/v3-naming-and-smart-defaults
-# Then create PR manually via GitHub UI
-```
+1. **Read this entire document** to understand specifications
+2. **Use agent instructions** from `.github/agents/terraform.agent.md`
+3. **Create module files** following the specifications below
+4. **Validate** all files (fmt, validate, tflint, checkov)
+5. **Use GitHub MCP server tools** to:
+   - Create branch `feature/v3-naming-and-smart-defaults`
+   - Push all files to `nathlan/terraform-azurerm-landing-zone-vending`
+   - Create pull request with message from `LZ_V3_COMMIT_MESSAGE.txt`
 
-## Files Location Reference
-
-All files ready at: `/home/runner/work/.github-private/.github-private/lz-module-v3-refactor/`
-
-Documentation:
-- `LZ_V3_IMPLEMENTATION_PLAN.md` - This file
-- `LZ_V3_PR_TEMPLATE.md` - Complete PR description
-- `LZ_V3_COMMIT_MESSAGE.txt` - Commit message text
-- `LZ_V3_FILE_MANIFEST.md` - List of all files with checksums
+**No bash scripts or manual git needed** - agent handles everything autonomously.
 
 ## Success Criteria
 
