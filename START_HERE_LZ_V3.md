@@ -30,12 +30,15 @@ Refactored Landing Zone vending module with:
 
 ### Use Terraform Module Creator Agent
 
+**Quick Start**: Read `LZ_V3_AGENT_DEPLOYMENT_GUIDE.md` for complete step-by-step instructions.
+
 An agent with GitHub MCP write access should:
 
 1. **Read Implementation Specifications**:
-   - `LZ_V3_IMPLEMENTATION_PLAN.md` - Complete deployment workflow
-   - `LZ_V3_NAMING_REQUIREMENTS.md` - **CORRECTED naming patterns**
-   - `LZ_V3_REFACTORING_PLAN.md` - Technical details
+   - `LZ_V3_AGENT_DEPLOYMENT_GUIDE.md` - **START HERE** - Complete workflow
+   - `LZ_V3_NAMING_REQUIREMENTS.md` - **CRITICAL** - Corrected naming patterns
+   - `LZ_V3_IMPLEMENTATION_PLAN.md` - Technical specifications
+   - `LZ_V3_REFACTORING_PLAN.md` - Detailed technical design
 
 2. **Pull Latest Code** from external repo:
    - Use GitHub MCP to get current `main` branch from `nathlan/terraform-azurerm-landing-zone-vending`
