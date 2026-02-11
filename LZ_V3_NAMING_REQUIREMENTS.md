@@ -6,6 +6,48 @@ This document provides the **CORRECTED** naming requirements for the Landing Zon
 
 ## Azure Naming Module vs Custom Prefixes
 
+**IMPORTANT**: Always check the Azure naming module outputs to see what's available:
+https://registry.terraform.io/modules/Azure/naming/azurerm/latest?tab=outputs
+
+### Resource Abbreviations for Naming Module Gaps
+
+For resource types NOT supported by the Azure naming module, use a **locals block** with configurable abbreviations:
+
+```hcl
+# ========================================
+# Resource Abbreviations (Internal to Module)
+# ========================================
+# These abbreviations are for resource types NOT in the Azure naming module.
+# Platform team can update these centrally without breaking user configurations.
+# NOT exposed via variables - internal to module only.
+
+locals {
+  # Resource abbreviations for types not in Azure naming module
+  resource_abbreviations = {
+    subscription   = "sub"
+    budget         = "budget"
+    resource_group = "rg"
+    # Add other custom abbreviations as needed
+  }
+}
+
+# Usage example:
+# name = "${local.resource_abbreviations.subscription}-${workload}-${env}"
+# Result: sub-example-api-prod
+```
+
+**Key Principles:**
+- ✅ **DO**: Define abbreviations in `locals` block (platform team can update)
+- ✅ **DO**: Keep abbreviations internal to module code
+- ❌ **DON'T**: Expose abbreviations as variables (users should NOT override)
+- ❌ **DON'T**: Hardcode abbreviations directly in naming patterns
+
+**Why This Pattern:**
+- Allows platform team to update abbreviations centrally
+- Maintains consistency across all landing zones
+- Easy to change if organizational standards evolve
+- Users get consistent naming without configuration burden
+
 ### ✅ Use Azure Naming Module (Azure/naming/azurerm ~> 0.4.3)
 
 The following resources use the Azure naming module with suffix `[workload, env]`:
@@ -28,21 +70,22 @@ The following resources require **CUSTOM naming** because they are NOT available
 
 #### 1. Subscriptions
 ```hcl
-# Custom local value
+# Use resource abbreviations from locals
 local.subscription_names = {
-  for lz_key, lz in var.landing_zones : lz_key => "sub-${lz.workload}-${lz.env}"
+  for lz_key, lz in var.landing_zones : 
+    lz_key => "${local.resource_abbreviations.subscription}-${lz.workload}-${lz.env}"
 }
 
-# Format: sub-{workload}-{env}
+# Format: {abbreviation}-{workload}-{env}
 # Example: sub-example-api-prod
 ```
 
 #### 2. Budgets
 ```hcl
-# Custom naming (consumption_budget output does NOT exist in naming module)
-name = "budget-${each.value.workload}-${each.value.env}"
+# Use resource abbreviations from locals
+name = "${local.resource_abbreviations.budget}-${each.value.workload}-${each.value.env}"
 
-# Format: budget-{workload}-{env}
+# Format: {abbreviation}-{workload}-{env}
 # Example: budget-example-api-prod
 ```
 
@@ -51,17 +94,17 @@ https://registry.terraform.io/modules/Azure/naming/azurerm/latest?tab=outputs
 
 #### 3. Resource Groups ⚠️ CRITICAL CORRECTION
 ```hcl
-# Custom naming with PURPOSE PREFIX
+# Use resource abbreviations from locals with PURPOSE PREFIX
 resource_groups = {
   rg_identity = {
-    name = "rg-identity-${each.value.workload}-${each.value.env}"
+    name = "${local.resource_abbreviations.resource_group}-identity-${each.value.workload}-${each.value.env}"
   }
   rg_network = {
-    name = "rg-network-${each.value.workload}-${each.value.env}"
+    name = "${local.resource_abbreviations.resource_group}-network-${each.value.workload}-${each.value.env}"
   }
 }
 
-# Format: rg-{purpose}-{workload}-{env}
+# Format: {abbreviation}-{purpose}-{workload}-{env}
 # Examples: 
 #   rg-identity-example-api-prod
 #   rg-network-example-api-prod
@@ -77,6 +120,20 @@ resource_groups = {
 ### In main.tf
 
 ```hcl
+# ========================================
+# Resource Abbreviations (Internal)
+# ========================================
+
+locals {
+  # Resource abbreviations for types NOT in Azure naming module
+  # Platform team can update these - NOT exposed to end users via tfvars
+  resource_abbreviations = {
+    subscription   = "sub"
+    budget         = "budget"
+    resource_group = "rg"
+  }
+}
+
 # ========================================
 # Azure Naming Module (per landing zone)
 # ========================================
@@ -94,9 +151,10 @@ module "naming" {
 # ========================================
 
 locals {
-  # Subscriptions (custom prefix)
+  # Subscriptions (using abbreviation from locals)
   subscription_names = {
-    for lz_key, lz in var.landing_zones : lz_key => "sub-${lz.workload}-${lz.env}"
+    for lz_key, lz in var.landing_zones : 
+      lz_key => "${local.resource_abbreviations.subscription}-${lz.workload}-${lz.env}"
   }
 }
 
@@ -111,18 +169,18 @@ module "landing_zone" {
   for_each = var.landing_zones
   location = each.value.location
 
-  # Subscription (custom naming)
+  # Subscription (using abbreviation from locals)
   subscription_display_name = local.subscription_names[each.key]
   subscription_alias_name   = local.subscription_names[each.key]
 
-  # Resource groups (custom naming with purpose prefix)
+  # Resource groups (using abbreviation from locals with purpose prefix)
   resource_groups = {
     rg_identity = {
-      name     = "rg-identity-${each.value.workload}-${each.value.env}"
+      name     = "${local.resource_abbreviations.resource_group}-identity-${each.value.workload}-${each.value.env}"
       location = each.value.location
     }
     rg_network = {
-      name     = "rg-network-${each.value.workload}-${each.value.env}"
+      name     = "${local.resource_abbreviations.resource_group}-network-${each.value.workload}-${each.value.env}"
       location = each.value.location
     }
   }
@@ -147,10 +205,10 @@ module "landing_zone" {
     }
   }
 
-  # Budgets (custom naming)
+  # Budgets (using abbreviation from locals)
   budgets = {
     monthly = {
-      name = "budget-${each.value.workload}-${each.value.env}"
+      name = "${local.resource_abbreviations.budget}-${each.value.workload}-${each.value.env}"
       # ... other config
     }
   }
@@ -203,6 +261,68 @@ user_managed_identities = {
 | User Assigned Identity (Plan) | Naming Module + Suffix | `id-{workload}-{env}-plan` | `id-example-api-prod-plan` |
 | User Assigned Identity (Deploy) | Naming Module + Suffix | `id-{workload}-{env}-deploy` | `id-example-api-prod-deploy` |
 | Budget | Custom | `budget-{workload}-{env}` | `budget-example-api-prod` |
+
+## Validation Checklist
+
+**Before implementing, review Azure naming module outputs:**
+1. Visit https://registry.terraform.io/modules/Azure/naming/azurerm/latest?tab=outputs
+2. Check if the resource type you need is available
+3. If available: Use `module.naming[].{resource_type}.name`
+4. If NOT available: Add abbreviation to `local.resource_abbreviations`
+
+When implementing, verify:
+
+- [ ] Reviewed Azure naming module outputs for all resource types needed
+- [ ] Resource types in naming module use `module.naming[].{type}.name`
+- [ ] Resource types NOT in naming module have abbreviation in `local.resource_abbreviations`
+- [ ] Resource abbreviations are in locals (NOT exposed via variables/tfvars)
+- [ ] Resource group names have purpose BEFORE workload: `{abbrev}-{purpose}-{workload}-{env}`
+- [ ] Subscription names use abbreviation from locals: `${local.resource_abbreviations.subscription}-{workload}-{env}`
+- [ ] Budget names use abbreviation from locals: `${local.resource_abbreviations.budget}-{workload}-{env}`
+- [ ] Virtual network uses naming module: `module.naming[].virtual_network.name`
+- [ ] UMI uses naming module + suffix: `${module.naming[].user_assigned_identity.name}-plan`
+- [ ] Role assignments have `relative_scope = ""` for subscription scope
+- [ ] No hardcoded abbreviations (all use `local.resource_abbreviations`)
+
+## How to Identify Naming Module Gaps
+
+### Step 1: List Required Resource Types
+For LZ v3.0.0, we need:
+- ✅ Subscriptions
+- ✅ Resource Groups
+- ✅ Virtual Networks
+- ✅ Subnets
+- ✅ User Assigned Identities
+- ✅ Budgets
+
+### Step 2: Check Azure Naming Module
+Visit: https://registry.terraform.io/modules/Azure/naming/azurerm/latest?tab=outputs
+
+Look for outputs matching your resource types:
+- `virtual_network` output? → ✅ Available, use naming module
+- `subnet` output? → ✅ Available, use naming module
+- `user_assigned_identity` output? → ✅ Available, use naming module
+- `consumption_budget` output? → ❌ NOT available, add to locals
+- `subscription` output? → ❌ NOT available, add to locals
+- `resource_group` output? → ⚠️ Available but we need custom pattern with purpose prefix
+
+### Step 3: Add Missing Abbreviations to Locals
+```hcl
+locals {
+  resource_abbreviations = {
+    # Add abbreviations for types NOT in naming module
+    subscription   = "sub"     # No subscription output in naming module
+    budget         = "budget"  # No consumption_budget output in naming module
+    resource_group = "rg"      # Available but we need custom pattern
+  }
+}
+```
+
+### Step 4: Document Pattern
+For each custom abbreviation, document:
+- Why it's not using the naming module
+- The pattern used (e.g., `{abbrev}-{workload}-{env}`)
+- Example of resulting name
 
 ## Validation Checklist
 

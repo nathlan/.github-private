@@ -129,17 +129,49 @@ Verify:
 
 ## Critical Naming Patterns
 
+### Resource Abbreviations Pattern
+
+**IMPORTANT**: Before implementing, review Azure naming module:
+https://registry.terraform.io/modules/Azure/naming/azurerm/latest?tab=outputs
+
+For resource types NOT in the naming module, use locals with configurable abbreviations:
+
+```hcl
+# ========================================
+# Resource Abbreviations (Internal to Module)
+# ========================================
+# These abbreviations are for resource types NOT in Azure naming module.
+# Platform team can update these centrally without breaking user configurations.
+# NOT exposed via variables/tfvars - internal to module only.
+
+locals {
+  resource_abbreviations = {
+    subscription   = "sub"
+    budget         = "budget"
+    resource_group = "rg"
+    # Add other custom abbreviations as needed after reviewing naming module
+  }
+}
+```
+
+**Why This Pattern:**
+- ✅ Platform team can update abbreviations centrally in module code
+- ✅ Consistency across all landing zones
+- ✅ NOT exposed via tfvars (users cannot override)
+- ✅ Easy to maintain if organizational standards change
+
 ### Resource Groups (Custom)
 ```hcl
-# Pattern: rg-{purpose}-{workload}-{env}
+# Pattern: {abbreviation}-{purpose}-{workload}-{env}
 # Purpose comes FIRST!
+# Uses abbreviation from locals
 
 resource_groups = {
   rg_identity = {
-    name = "rg-identity-${each.value.workload}-${each.value.env}"
+    name = "${local.resource_abbreviations.resource_group}-identity-${each.value.workload}-${each.value.env}"
   }
   rg_network = {
-    name = "rg-network-${each.value.workload}-${each.value.env}"
+    name = "${local.resource_abbreviations.resource_group}-network-${each.value.workload}-${each.value.env}"
   }
 }
 
@@ -151,13 +183,14 @@ resource_groups = {
 
 ### Subscriptions (Custom)
 ```hcl
-# Pattern: sub-{workload}-{env}
+# Pattern: {abbreviation}-{workload}-{env}
 # NOT from naming module
+# Uses abbreviation from locals
 
 locals {
   subscription_names = {
     for lz_key, lz in var.landing_zones : 
-      lz_key => "sub-${lz.workload}-${lz.env}"
+      lz_key => "${local.resource_abbreviations.subscription}-${lz.workload}-${lz.env}"
   }
 }
 
@@ -166,12 +199,13 @@ locals {
 
 ### Budgets (Custom)
 ```hcl
-# Pattern: budget-{workload}-{env}
+# Pattern: {abbreviation}-{workload}-{env}
 # NOT from naming module (consumption_budget output doesn't exist)
+# Uses abbreviation from locals
 
 budgets = {
   monthly = {
-    name = "budget-${each.value.workload}-${each.value.env}"
+    name = "${local.resource_abbreviations.budget}-${each.value.workload}-${each.value.env}"
     # ...
   }
 }
