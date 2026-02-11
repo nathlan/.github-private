@@ -1,7 +1,7 @@
 # ALZ Infrastructure - Manual Configuration Guide
 
-**Status:** ✅ Automated Setup Complete | ⚠️ Manual Configuration Required  
-**Date:** 2026-02-10  
+**Status:** ✅ Automated Setup Complete | ⚠️ Manual Configuration Required
+**Date:** 2026-02-10
 **For:** Platform Engineering Team
 
 ---
@@ -60,18 +60,18 @@ The following tasks must be completed manually by the Platform Engineering team 
    | `AZURE_SUBSCRIPTION_ID` | Management subscription ID | Azure Portal → Subscriptions → Your management subscription ID |
 
 3. **Verify OIDC Configuration:**
-   
+
    Ensure your Azure service principal has federated credentials configured for GitHub:
-   
+
    ```bash
    # Verify federated credential exists
    az ad app federated-credential list \
      --id <YOUR_APP_ID> \
      --query "[?name=='github-alz-subscriptions']"
    ```
-   
+
    If not configured, create it:
-   
+
    ```bash
    az ad app federated-credential create \
      --id <YOUR_APP_ID> \
@@ -81,7 +81,7 @@ The following tasks must be completed manually by the Platform Engineering team 
        "subject": "repo:nathlan/alz-subscriptions:ref:refs/heads/main",
        "audiences": ["api://AzureADTokenExchange"]
      }'
-   
+
    # Add credential for pull requests
    az ad app federated-credential create \
      --id <YOUR_APP_ID> \
@@ -94,9 +94,9 @@ The following tasks must be completed manually by the Platform Engineering team 
    ```
 
 4. **Assign Azure Permissions:**
-   
+
    The service principal needs appropriate permissions:
-   
+
    ```bash
    # Assign Owner at management group level for subscription creation
    az role assignment create \
@@ -124,7 +124,7 @@ The following tasks must be completed manually by the Platform Engineering team 
    - Click "Configure environment"
 
 2. **Configure Environment Protection Rules:**
-   
+
    **Required Reviewers:**
    - ✅ Check "Required reviewers"
    - Add platform team members (minimum 1 required)
@@ -142,12 +142,12 @@ The following tasks must be completed manually by the Platform Engineering team 
    - Recommended: 0 minutes (immediate deployment after approval)
 
 3. **Add Environment Secrets:**
-   
+
    Add the same three secrets at environment level:
    - `AZURE_CLIENT_ID`
    - `AZURE_TENANT_ID`
    - `AZURE_SUBSCRIPTION_ID`
-   
+
    **Note:** Environment-level secrets take precedence over repository secrets for environment-protected jobs.
 
 4. **Save Configuration**
@@ -168,42 +168,42 @@ The following tasks must be completed manually by the Platform Engineering team 
    - Click "Add branch protection rule"
 
 2. **Configure Protection for `main` Branch:**
-   
+
    **Branch name pattern:** `main`
-   
+
    **Protection Settings:**
-   
+
    ✅ **Require a pull request before merging**
    - ✅ Require approvals: 1
    - ✅ Dismiss stale pull request approvals when new commits are pushed
    - ✅ Require review from Code Owners (if CODEOWNERS file added)
-   
+
    ✅ **Require status checks to pass before merging**
    - ✅ Require branches to be up to date before merging
    - Required status checks (add after first workflow run):
      - `validate`
      - `security`
      - `plan`
-   
+
    ✅ **Require conversation resolution before merging**
-   
+
    ✅ **Require signed commits** (recommended but optional)
-   
+
    ✅ **Include administrators** (recommended: unchecked for emergency access)
-   
+
    ✅ **Restrict who can push to matching branches**
    - Add: `platform-engineering` team
-   
+
    ✅ **Allow force pushes** - ❌ Disabled
-   
+
    ✅ **Allow deletions** - ❌ Disabled
 
 3. **Save Changes**
 
 4. **Verify Protection:**
-   
+
    Test by attempting to push directly to main (should be blocked):
-   
+
    ```bash
    # This should fail
    git push origin main
@@ -249,17 +249,17 @@ The following tasks must be completed manually by the Platform Engineering team 
 **Steps:**
 
 1. **Obtain Azure Configuration Values:**
-   
+
    ```bash
    # 1. Get Tenant ID
    TENANT_ID=$(az account show --query tenantId -o tsv)
    echo "Tenant ID: $TENANT_ID"
-   
+
    # 2. Get Billing Scope (Enterprise Agreement example)
    BILLING_SCOPE=$(az billing enrollment-account list --query "[0].id" -o tsv)
    echo "Billing Scope: $BILLING_SCOPE"
    # Format: /providers/Microsoft.Billing/billingAccounts/{id}/enrollmentAccounts/{id}
-   
+
    # 3. Get Hub VNet Resource ID
    HUB_VNET_ID=$(az network vnet show \
      --resource-group rg-hub-network \
@@ -270,17 +270,17 @@ The following tasks must be completed manually by the Platform Engineering team 
    ```
 
 2. **Update Agent Configuration:**
-   
+
    Edit `nathlan/.github-private/agents/alz-vending.agent.md`:
-   
+
    Find lines 433-437 and replace PLACEHOLDER values:
-   
+
    ```yaml
    # Before:
    tenant_id: "PLACEHOLDER"
    billing_scope: "PLACEHOLDER"
    hub_network_resource_id: "PLACEHOLDER"
-   
+
    # After:
    tenant_id: "00000000-0000-0000-0000-000000000000"  # Your actual tenant ID
    billing_scope: "/providers/Microsoft.Billing/billingAccounts/xxxxx/enrollmentAccounts/xxxxx"
@@ -288,7 +288,7 @@ The following tasks must be completed manually by the Platform Engineering team 
    ```
 
 3. **Commit and Push:**
-   
+
    ```bash
    git add agents/alz-vending.agent.md
    git commit -m "config(alz): Update Azure configuration values"
@@ -307,29 +307,29 @@ The following tasks must be completed manually by the Platform Engineering team 
    - Go to: https://github.com/nathlan/alz-subscriptions
 
 2. **Edit Example Files:**
-   
+
    Update placeholders in:
    - `landing-zones/example-app-prod.tfvars`
    - `landing-zones/example-api-dev.tfvars`
-   
+
    Replace:
    - `PLACEHOLDER_BILLING_SCOPE` → Your actual billing scope
    - `PLACEHOLDER_HUB_VNET_ID` → Your actual hub VNet resource ID
    - `10.100.0.0/24` and `10.101.0.0/24` → Your allocated CIDR blocks
 
 3. **Optional: Add CODEOWNERS File:**
-   
+
    Create `.github/CODEOWNERS`:
-   
+
    ```
    # ALZ Subscription Vending - Code Owners
-   
+
    # Platform Engineering team owns all landing zone definitions
    /landing-zones/ @nathlan/platform-engineering
-   
+
    # Terraform module configuration
    *.tf @nathlan/platform-engineering
-   
+
    # GitHub Actions workflows
    /.github/workflows/ @nathlan/platform-engineering
    ```
@@ -484,14 +484,14 @@ For questions or issues with manual configuration:
 ## Related Documentation
 
 - `ALZ_IMPLEMENTATION_INSTRUCTIONS.md` - Complete implementation guide
-- `ALZ_DEPLOYMENT_QUICKSTART.md` - Quick reference guide  
+- `ALZ_DEPLOYMENT_QUICKSTART.md` - Quick reference guide
 - `ALZ_VENDING_DIAGNOSTICS.md` - Diagnostic information
 - `agents/alz-vending.agent.md` - Orchestrator configuration
 
 ---
 
-**Document Version:** 1.0  
-**Last Updated:** 2026-02-10  
+**Document Version:** 1.0
+**Last Updated:** 2026-02-10
 **Status:** Ready for Platform Team Implementation
 
 **Next Steps:**

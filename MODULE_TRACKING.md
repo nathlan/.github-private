@@ -8,7 +8,7 @@ This file tracks all Terraform modules created for the organization.
 |-------------|----------------|----------------|--------|-------------|
 | terraform-azurerm-resource-group | [Link](https://github.com/nathlan/terraform-azurerm-resource-group) | v1.0.0 → v2.0.0 | 🔄 PR Open | Azure Resource Group with naming integration |
 | terraform-azurerm-storage-account | [Link](https://github.com/nathlan/terraform-azurerm-storage-account) | v0.1.0 → v0.2.0 | 🔄 PR Open | Storage Account with naming integration |
-| terraform-azurerm-landing-zone-vending | [Link](https://github.com/nathlan/terraform-azurerm-landing-zone-vending) | v1.1.0 | ✅ Active | Subscription vending wrapper with UMI/Budget support |
+| terraform-azurerm-landing-zone-vending | [Link](https://github.com/nathlan/terraform-azurerm-landing-zone-vending) | v1.1.0 → v2.0.0 | 🔄 PR Open | Subscription vending with IP automation |
 | terraform-azurerm-firewall | [Link](https://github.com/nathlan/terraform-azurerm-firewall) | v0.1.2 → v0.1.4 | 🔄 PR Open | Azure Firewall wrapper with Australian region validation |
 | terraform-azurerm-firewall-policy | [Link](https://github.com/nathlan/terraform-azurerm-firewall-policy) | v0.1.0 → v0.2.0 | 🔄 PR Open | Firewall Policy with rule collection groups |
 
@@ -29,11 +29,14 @@ This file tracks all Terraform modules created for the organization.
 - **PR**: [#3](https://github.com/nathlan/terraform-azurerm-storage-account/pull/3) - Integrate Azure naming module with automatic tagging
 
 ### terraform-azurerm-landing-zone-vending
-- **AVM Source**: `Azure/avm-ptn-alz-sub-vending/azure` 0.1.0
-- **Key Features**: Subscription alias, management group association, virtual network deployment, user-managed identities with OIDC federated credentials, budgets with notifications
+- **AVM Source**: `Azure/avm-ptn-alz-sub-vending/azure` ~> 0.1.0
+- **AVM Utility**: `Azure/avm-utl-network-ip-addresses/azurerm` ~> 0.1.0
+- **Naming Module**: `Azure/naming/azurerm` ~> 0.4.3
+- **Key Features**: Clean interface with 70% code reduction, automatic resource naming, smart defaults, multi-landing zone support, environment validation (dev/test/prod), automatic IP address allocation, simplified budget/VNet/OIDC config
 - **Submodules**: None
-- **Latest**: v1.1.0 - [PR #4](https://github.com/nathlan/terraform-azurerm-landing-zone-vending/pull/4) (merged 2026-02-09) - Add UMI and budget support for ALZ orchestrator
-- **Previous**: [PR #3](https://github.com/nathlan/terraform-azurerm-landing-zone-vending/pull/3) - Add terraform version constraint (merged)
+- **Pending**: Major refactor ready in `/tmp/terraform-azurerm-landing-zone-vending-refactor/` - Requires manual push (GitHub MCP write ops not available)
+- **Latest PR**: [#5](https://github.com/nathlan/terraform-azurerm-landing-zone-vending/pull/5) - Add IP address automation using AVM utility module
+- **Previous**: v1.1.0 - [PR #4](https://github.com/nathlan/terraform-azurerm-landing-zone-vending/pull/4) (merged 2026-02-09) - Add UMI and budget support
 
 ### terraform-azurerm-firewall
 - **AVM Source**: `Azure/avm-res-network-azurefirewall/azurerm` ~> 0.4.0
