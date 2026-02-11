@@ -1,6 +1,6 @@
 # GitHub Config Agent: Implementation Steps
 
-**CRITICAL:** You are the GitHub Config agent with write permissions via GitHub MCP. Follow these steps EXACTLY.
+**CRITICAL:** You are the GitHub Config agent with write permissions via GitHub MCP. Follow these steps EXACTLY to modify the github-config repository.
 
 ## Prerequisites Verification
 
@@ -8,97 +8,162 @@ Before starting, verify:
 - [ ] You are running as the GitHub Config agent identity
 - [ ] GitHub MCP server has been restarted with your credentials
 - [ ] You have write access to `nathlan/github-config` repository
-- [ ] You can see all files in this directory: `.handover/github-config-alz-template/`
 
-## Step 1: Verify File Availability
+## Overview
 
-All required files are in this directory:
+You will IMPORT the EXISTING `alz-workload-template` repository into Terraform management and configure `is_template = true`. The repository already exists - this is NOT a create operation.
 
-```bash
-ls -la /home/runner/work/.github-private/.github-private/.handover/github-config-alz-template/
-```
+## Step 1: Read Terraform Code
 
-Should show:
-- main.tf (5212 bytes)
-- outputs.tf (729 bytes)  
-- IMPORT_INSTRUCTIONS.md (1435 bytes)
-- IMPLEMENTATION_STEPS.md (this file)
-- PR_DESCRIPTION.md (PR description template)
+Read the file: `TERRAFORM_CODE_TO_ADD.md` in this directory
+
+It contains the exact Terraform code to add to the github-config repository.
 
 ## Step 2: Create Branch in github-config Repository
 
-Using GitHub MCP write tools, create a new branch:
+Using GitHub MCP write tools:
 
 **Repository:** `nathlan/github-config`
 **Base Branch:** `main`
 **New Branch:** `terraform/configure-alz-workload-template`
 
-## Step 3: Push Files to terraform/ Directory
+## Step 3: Modify terraform/main.tf
 
-Push these 3 files to the `terraform/` directory (at repository root) in the new branch:
+**Action:** APPEND (add to the end of the existing file)
 
-### File 1: terraform/main.tf
-**Action:** REPLACE existing file
-**Source:** `/home/runner/work/.github-private/.github-private/.handover/github-config-alz-template/main.tf`
-**Target:** `terraform/main.tf` in github-config repo
+Get current content of `terraform/main.tf` from github-config repo, then ADD this resource at the end:
 
-**CRITICAL:** This file includes BOTH the existing configuration AND the new alz-workload-template resource. You MUST replace the entire file, not append.
+```hcl
+# ============================================================================
+# ALZ Workload Template Repository Configuration
+# ============================================================================
+# CRITICAL: This repository ALREADY EXISTS. Import required:
+#   terraform import github_repository.alz_workload_template alz-workload-template
 
-### File 2: terraform/outputs.tf
-**Action:** REPLACE existing file
-**Source:** `/home/runner/work/.github-private/.github-private/.handover/github-config-alz-template/outputs.tf`
-**Target:** `terraform/outputs.tf` in github-config repo
+resource "github_repository" "alz_workload_template" {
+  name        = "alz-workload-template"
+  description = "Template repository for ALZ workload repositories with pre-configured Terraform workflows"
+  visibility  = "public"
+  is_template = true
 
-### File 3: terraform/IMPORT_INSTRUCTIONS.md
+  has_issues   = true
+  has_projects = false
+  has_wiki     = false
+
+  allow_squash_merge     = true
+  allow_merge_commit     = false
+  allow_rebase_merge     = true
+  allow_auto_merge       = false
+  delete_branch_on_merge = true
+
+  vulnerability_alerts = true
+
+  topics = ["azure", "terraform", "template", "landing-zone", "alz"]
+
+  lifecycle {
+    prevent_destroy = true
+  }
+}
+```
+
+## Step 4: Modify terraform/outputs.tf
+
+**Action:** APPEND (add to the end of the existing file)
+
+Get current content of `terraform/outputs.tf` from github-config repo, then ADD these outputs at the end:
+
+```hcl
+# ALZ Workload Template Repository Outputs
+output "alz_workload_template_name" {
+  description = "Name of the ALZ workload template repository"
+  value       = github_repository.alz_workload_template.name
+}
+
+output "alz_workload_template_url" {
+  description = "URL of the ALZ workload template repository"
+  value       = github_repository.alz_workload_template.html_url
+}
+
+output "alz_workload_template_is_template" {
+  description = "Whether the repository is marked as a template"
+  value       = github_repository.alz_workload_template.is_template
+}
+```
+
+## Step 5: Create terraform/IMPORT_INSTRUCTIONS.md
+
 **Action:** CREATE new file
-**Source:** `/home/runner/work/.github-private/.github-private/.handover/github-config-alz-template/IMPORT_INSTRUCTIONS.md`
-**Target:** `terraform/IMPORT_INSTRUCTIONS.md` in github-config repo
 
-## Step 4: Commit Changes
+See `TERRAFORM_CODE_TO_ADD.md` for the complete content.
+
+## Step 6: Commit Changes
 
 **Commit Message:**
 ```
-feat(github): Configure alz-workload-template as template repository
+feat(github): Import and configure alz-workload-template as template repository
 
-Add Terraform configuration to manage the alz-workload-template repository
-with is_template = true to enable GitHub template functionality.
+Add Terraform configuration to import existing alz-workload-template repository
+and set is_template = true to enable GitHub template functionality.
+
+CRITICAL: This imports an EXISTING repository, not creating a new one.
 
 Changes:
-- Add github_repository.alz_workload_template resource with is_template = true
-- Configure repository settings aligned with ALZ standards
+- Add github_repository.alz_workload_template resource (import required)
+- Configure is_template = true to enable template functionality
 - Add lifecycle protection to prevent accidental deletion
-- Update outputs.tf to export template repository details
-- Add IMPORT_INSTRUCTIONS.md with detailed import and verification steps
+- Add outputs for template repository details
+- Add IMPORT_INSTRUCTIONS.md with import workflow
 
-This eliminates the need for manual UI configuration of the template flag.
+Before applying:
+  terraform import github_repository.alz_workload_template alz-workload-template
 ```
 
-## Step 5: Create Pull Request
+## Step 7: Create Pull Request
 
-**Title:** `feat: Configure alz-workload-template as GitHub template repository`
+**Title:** `feat: Import and configure alz-workload-template as template repository`
 
-**Body:** Use the content from `PR_DESCRIPTION.md` in this directory
+**Body:** Use content from `PR_DESCRIPTION.md` in this directory
 
 **Settings:**
 - Base: `main`
 - Head: `terraform/configure-alz-workload-template`
 - Draft: `false` (ready for review)
 
-## Step 6: Verify PR Created
+## Step 8: Report Back
 
-Confirm:
-- [ ] PR is created in `nathlan/github-config` repository
-- [ ] PR shows 3 files changed
-- [ ] PR description is complete
-- [ ] PR is not in draft mode
+Report the PR URL to the user.
 
-## Step 7: Report Back
+## Success Criteria
 
-Report the PR URL to the user so they can:
-1. Review the changes
-2. Merge the PR
-3. Run terraform import
-4. Apply the configuration
+✅ Branch created in github-config repository
+✅ terraform/main.tf updated (appended resource)
+✅ terraform/outputs.tf updated (appended outputs)
+✅ terraform/IMPORT_INSTRUCTIONS.md created
+✅ Commit message emphasizes IMPORT of existing resource
+✅ PR created and ready for review
+✅ PR URL reported to user
+
+## After PR Merge (User Actions)
+
+The user will:
+
+1. **Import existing repository:**
+   ```bash
+   terraform import github_repository.alz_workload_template alz-workload-template
+   ```
+
+2. **Review changes:**
+   ```bash
+   terraform plan
+   # Expected: is_template: false → true
+   ```
+
+3. **Apply configuration:**
+   ```bash
+   terraform apply
+   ```
+
+4. **Verify:** Check that "Use this template" button appears on alz-workload-template
 
 ## Troubleshooting
 
@@ -106,26 +171,9 @@ Report the PR URL to the user so they can:
 - GitHub MCP server not restarted with your credentials
 - Restart MCP server as GitHub Config agent identity
 
-### "Files not found"
-- Files are in `.handover/github-config-alz-template/` directory
-- This directory is in the `.github-private` repository
-- Use absolute path: `/home/runner/work/.github-private/.github-private/.handover/github-config-alz-template/`
-
 ### "Branch already exists"
-- Delete the branch first or use a different branch name with timestamp
+- Use a different branch name with timestamp or delete existing branch first
 
-## Success Criteria
+---
 
-✅ Branch created in github-config repository
-✅ 3 files pushed to terraform/ directory  
-✅ Commit message follows conventional commits
-✅ PR created and ready for review
-✅ PR URL reported to user
-
-## What Happens Next (After PR Merge)
-
-User will:
-1. Review and merge PR
-2. Import existing repository: `terraform import github_repository.alz_workload_template alz-workload-template`
-3. Apply configuration: `terraform apply`
-4. Verify template button appears on alz-workload-template repository
+**Key Point:** This is an **IMPORT and CONFIGURE** operation. The alz-workload-template repository ALREADY EXISTS. Terraform will import it into state, then configure `is_template = true`.
