@@ -1,33 +1,131 @@
 # Landing Zone Module v3.0.0 - Implementation Plan
 
+## ⚠️ CRITICAL: External Repository Deployment Required
+
+**ALL module files MUST be created and pushed to the external repository:**
+- **Target Repo**: `nathlan/terraform-azurerm-landing-zone-vending`
+- **NO .tf files** can be left in this `.github-private` repository
+- **Work in /tmp/** is ephemeral and will be lost between sessions
+
+## Agent Workflow
+
+The terraform-module-creator agent MUST follow this workflow:
+
+### 1. Pull Latest Code from External Repo
+```
+Use GitHub MCP server to get current main branch from:
+  nathlan/terraform-azurerm-landing-zone-vending
+
+This provides the base for making changes.
+```
+
+### 2. Create Module Files in /tmp/
+```
+Create all 15 module files in a temporary directory:
+  /tmp/terraform-azurerm-landing-zone-vending-v3/
+
+DO NOT create or modify ANY .tf files in .github-private repo!
+```
+
+### 3. Validate All Files
+```
+Run validations in /tmp/ directory:
+  - terraform init -backend=false
+  - terraform fmt -recursive  
+  - terraform validate
+  - terraform-docs (if available)
+```
+
+### 4. Push to New Branch in External Repo
+```
+Use GitHub MCP server to:
+  - Create branch: feature/v3-naming-and-smart-defaults
+  - Push all files from /tmp/ to external repo
+  - Create pull request
+
+ALL changes must go to external repository!
+```
+
+### 5. Clean Up
+```
+/tmp/ files will be lost after session ends.
+This is expected and correct - external repo is source of truth.
+```
+
 ## Instructions for Agent
 
 This document contains complete specifications for the terraform-module-creator agent to:
-1. **Recreate** all module files from these specifications
-2. **Use GitHub MCP server** (write access required) to push to external repository
-3. **Create PR** for v3.0.0 release
+1. **Pull** latest code from external repo via GitHub MCP
+2. **Recreate** all module files from these specifications in /tmp/
+3. **Validate** all files (fmt, validate, etc.)
+4. **Push** changes to new branch in external repo via GitHub MCP
+5. **Create PR** in external repo for v3.0.0 release
 
-## Why Recreate?
+## Why This Workflow?
 
-The `.tf` files were created during development but are NOT in this repository because:
-- Pre-commit hooks correctly prevent .tf files in .github-private repo
-- Files were created in /tmp/ and are ephemeral
-- **Agent will recreate from specifications** in this document
+- `.tf` files are correctly blocked by pre-commit hooks in .github-private
+- Files in /tmp/ are ephemeral (lost between sessions)
+- **External repository** (`nathlan/terraform-azurerm-landing-zone-vending`) is the source of truth
+- **Agent MUST use GitHub MCP** to interact with external repo
+- No manual git commands or local clones needed
 
 ## Status
 ✅ Module design complete and validated
-✅ Time provider integration specified
-✅ Azure naming module integration specified
-✅ Ready for agent to recreate and deploy
+✅ Naming requirements corrected (see LZ_V3_NAMING_REQUIREMENTS.md)
+✅ Ready for agent to recreate and deploy to external repo
 
 ## Mission
 Use terraform-module-creator agent to recreate and push the refactored terraform-azurerm-landing-zone-vending module to GitHub as v3.0.0 with breaking changes.
 
 ## Target Repository
 - **Repo**: `nathlan/terraform-azurerm-landing-zone-vending`
-- **Base Branch**: `feature/add-ip-address-automation` or `main`
+- **Base Branch**: `main` (current v2.x with IP automation)
 - **New Branch**: `feature/v3-naming-and-smart-defaults`
 - **Target Version**: v3.0.0 (MAJOR release with breaking changes)
+
+## ⚠️ CORRECTED Naming Requirements
+
+**READ FIRST**: See `LZ_V3_NAMING_REQUIREMENTS.md` for full details.
+
+### Use Azure Naming Module
+- ✅ Virtual Networks: `module.naming[].virtual_network.name`
+- ✅ Subnets: `module.naming[].subnet.name`
+- ✅ User Assigned Identities: `module.naming[].user_assigned_identity.name` + suffix
+
+### Use Custom Naming (NOT in naming module)
+- ❌ **Subscriptions**: `sub-{workload}-{env}` (custom local)
+- ❌ **Budgets**: `budget-{workload}-{env}` (consumption_budget output doesn't exist)
+- ❌ **Resource Groups**: `rg-{purpose}-{workload}-{env}` (purpose prefix FIRST)
+
+### Critical: Resource Group Pattern
+```hcl
+# ✅ CORRECT
+resource_groups = {
+  rg_identity = {
+    name = "rg-identity-${each.value.workload}-${each.value.env}"
+  }
+  rg_network = {
+    name = "rg-network-${each.value.workload}-${each.value.env}"
+  }
+}
+
+# Examples:
+#   rg-identity-example-api-prod  ✅
+#   rg-network-example-api-prod   ✅
+#   
+#   rg-example-api-prod-identity  ❌ WRONG
+```
+
+### Role Assignments
+```hcl
+# Always at subscription scope
+role_assignments = {
+  subscription_reader = {
+    definition     = "Reader"
+    relative_scope = ""  # Empty = subscription scope
+  }
+}
+```
 
 ## Module Specifications
 

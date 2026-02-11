@@ -32,17 +32,44 @@ Refactored Landing Zone vending module with:
 
 An agent with GitHub MCP write access should:
 
-1. **Read** `LZ_V3_IMPLEMENTATION_PLAN.md` for complete specifications
-2. **Recreate** the module files from specifications (all .tf files, configs, examples)
-3. **Use GitHub MCP server** to:
-   - Create branch `feature/v3-naming-and-smart-defaults` in `nathlan/terraform-azurerm-landing-zone-vending`
+1. **Read Implementation Specifications**:
+   - `LZ_V3_IMPLEMENTATION_PLAN.md` - Complete deployment workflow
+   - `LZ_V3_NAMING_REQUIREMENTS.md` - **CORRECTED naming patterns**
+   - `LZ_V3_REFACTORING_PLAN.md` - Technical details
+
+2. **Pull Latest Code** from external repo:
+   - Use GitHub MCP to get current `main` branch from `nathlan/terraform-azurerm-landing-zone-vending`
+
+3. **Create Module Files in /tmp/**:
+   - Generate all .tf files following corrected naming requirements
+   - **DO NOT** create or save .tf files in .github-private repo!
+
+4. **Validate** in /tmp/:
+   - terraform init -backend=false
+   - terraform fmt -recursive
+   - terraform validate
+
+5. **Push to External Repo** via GitHub MCP:
+   - Create branch `feature/v3-naming-and-smart-defaults`
    - Push all module files
    - Create PR with description from `LZ_V3_COMMIT_MESSAGE.txt`
 
-**Target Repository**: `nathlan/terraform-azurerm-landing-zone-vending`
-**Version**: v3.0.0 (BREAKING CHANGES)
+**Target Repository**: `nathlan/terraform-azurerm-landing-zone-vending`  
+**Version**: v3.0.0 (BREAKING CHANGES)  
+**Location**: External repo ONLY - no .tf files in .github-private!
 
-**No manual git commands or bash scripts needed** - the agent handles everything via GitHub MCP server.
+### ⚠️ Critical Naming Corrections
+
+**Resource Groups**: `rg-{purpose}-{workload}-{env}` (purpose FIRST!)
+- ✅ `rg-identity-example-api-prod`
+- ✅ `rg-network-example-api-prod`
+- ❌ NOT `rg-example-api-prod-identity`
+
+**Subscriptions**: `sub-{workload}-{env}` (custom, not naming module)
+
+**Budgets**: `budget-{workload}-{env}` (custom, consumption_budget output doesn't exist)
+
+See `LZ_V3_NAMING_REQUIREMENTS.md` for complete details.
 
 ## Key Changes Summary
 
