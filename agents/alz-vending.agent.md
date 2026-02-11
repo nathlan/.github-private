@@ -50,9 +50,11 @@ Parse the user's prompt for these fields. Apply defaults for omitted optional fi
 | `address_space` | — | Yes | Valid CIDR notation, /24 or larger |
 | `team_name` | — | Yes | Must be a valid GitHub team slug |
 | `cost_center` | — | Yes | Non-empty string |
+| `team_email` | — | Yes | Valid email for budget alerts |
 | `repo_name` | `{workload_name}` | No | Valid GitHub repo name |
 | `repo_visibility` | `internal` | No | `internal` or `private` |
-| `budget_amount` | `500` | No | Positive integer |
+| `budget_amount` | `500` | No | Positive integer (monthly budget in currency) |
+| `budget_threshold` | `80` | No | Percentage (0-100) for budget alerts |
 | `workload_description` | — | No | Max 200 chars |
 
 ### Computed Values
@@ -161,42 +163,61 @@ virtual_networks = {
 }
 
 # --- User Managed Identity + OIDC Federation ---
-# NOTE: Requires UMI variables to be exposed in the private module wrapper.
-# See: https://github.com/nathlan/terraform-azurerm-landing-zone-vending
-# Once the module supports UMI, uncomment and update this section.
-#
-# umi_enabled = true
-# user_managed_identities = {
-#   deploy = {
-#     name               = "umi-{workload_name}-deploy"
-#     resource_group_key = "rg_workload"
-#     role_assignments = {
-#       sub_contributor = {
-#         definition     = "Contributor"
-#         relative_scope = ""
-#       }
-#     }
-#     federated_credentials_github = {
-#       prod_env = {
-#         organization = "{github_org}"
-#         repository   = "{repo_name}"
-#         entity       = "environment"
-#         value        = "production"
-#       }
-#       main_branch = {
-#         organization = "{github_org}"
-#         repository   = "{repo_name}"
-#         entity       = "branch"
-#         value        = "main"
-#       }
-#       pull_request = {
-#         organization = "{github_org}"
-#         repository   = "{repo_name}"
-#         entity       = "pull_request"
-#       }
-#     }
-#   }
-# }
+# Module v1.1.0+ supports UMI with OIDC federation for GitHub Actions
+umi_enabled = true
+user_managed_identities = {
+  deploy = {
+    name               = "umi-{workload_name}-deploy"
+    resource_group_key = "rg_workload"
+    location           = "{location}"
+    role_assignments = {
+      sub_contributor = {
+        definition     = "Contributor"
+        relative_scope = ""  # Empty = subscription scope
+      }
+    }
+    federated_credentials_github = {
+      prod_env = {
+        organization = "{github_org}"
+        repository   = "{repo_name}"
+        entity       = "environment"
+        value        = "production"
+      }
+      main_branch = {
+        organization = "{github_org}"
+        repository   = "{repo_name}"
+        entity       = "branch"
+        value        = "main"
+      }
+      pull_request = {
+        organization = "{github_org}"
+        repository   = "{repo_name}"
+        entity       = "pull_request"
+      }
+    }
+  }
+}
+
+# --- Budget ---
+# Module v1.1.0+ supports budget creation with time-based configuration
+budget_enabled = true
+budgets = {
+  monthly = {
+    name           = "budget-{workload_name}-{env_short}"
+    amount         = {budget_amount}
+    time_grain     = "Monthly"
+    time_period_start = "{current_year}-01-01T00:00:00Z"
+    time_period_end   = "{next_year}-01-01T00:00:00Z"
+    notifications = {
+      actual_80_percent = {
+        enabled        = true
+        operator       = "GreaterThan"
+        threshold      = 80
+        contact_emails = ["{team_email}"]
+      }
+    }
+  }
+}
 ```
 
 ### PR Body Template
@@ -222,7 +243,8 @@ virtual_networks = {
 - Azure Subscription: `{subscription_display_name}`
 - Resource Groups: `rg-{workload_name}`, `NetworkWatcherRG`
 - VNet: `vnet-{workload_name}-{location}` ({address_space}) — peered with hub
-- _(UMI + OIDC federation: pending module enhancement)_
+- User Managed Identity: `umi-{workload_name}-deploy` with OIDC federation
+- Budget: `budget-{workload_name}-{env_short}` (${budget_amount}/month)
 
 ### Related
 
@@ -236,6 +258,8 @@ virtual_networks = {
 - [ ] Management group assignment is correct
 - [ ] Tags are complete and accurate
 - [ ] Subscription naming follows convention
+- [ ] UMI role assignments are appropriate
+- [ ] Budget amount and threshold are reasonable
 ```
 
 ---
@@ -396,6 +420,8 @@ When all phases are complete, post this summary:
   - [View in Azure Portal](https://portal.azure.com/#@{tenant_id}/resource/subscriptions/{subscription_id}/overview)
 - **Resource Groups:** rg-{workload_name}, NetworkWatcherRG
 - **VNet:** vnet-{workload_name}-{location} ({address_space}) — peered with hub
+- **User Managed Identity:** umi-{workload_name}-deploy with OIDC federation for GitHub Actions
+- **Budget:** budget-{workload_name}-{env_short} (${budget_amount}/month, {threshold}% alert)
 
 ### GitHub Resources
 - **Repository:** [{github_org}/{repo_name}](https://github.com/{github_org}/{repo_name})
@@ -448,7 +474,12 @@ default_repo_visibility: "internal"
 
 # --- Private Module ---
 lz_module_repo: "nathlan/terraform-azurerm-landing-zone-vending"
-lz_module_version: "~> 1.0"
+lz_module_version: "~> 1.1"  # v1.1.0+ has UMI and budget support
+
+# --- Module Capabilities ---
+# v1.1.0 (current): UMI with OIDC federation, budgets, IP automation
+# v2.0.0 (pending PR #5): Enhanced IP address automation with AVM utility module
+# v3.0.0 (planned): Azure naming module integration, smart defaults, landing_zones map structure
 ```
 
 ---
@@ -513,5 +544,6 @@ Validate Inputs → Create .tfvars PR + Tracking Issue → Handoff to github-con
 **Key Constraints:**
 - Corp LZ only (hub-peered, management group = Corp)
 - One subscription per `.tfvars` file
-- UMI/OIDC section commented out until module supports it
+- Module v1.1.0+ supports UMI/OIDC and budgets
 - Placeholder values used for cross-phase dependencies
+- Module v3.0.0 will introduce breaking changes (landing_zones map structure)
