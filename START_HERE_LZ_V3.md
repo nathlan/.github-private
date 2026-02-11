@@ -1,85 +1,83 @@
-# 🚀 START HERE - Landing Zone Module v3.0.0
+# START HERE - Landing Zone Module v3.0.0
 
-## Quick Navigation
+## What This Is
 
-Everything you need is saved in this repository. No files lost!
+Refactored Landing Zone vending module with:
+- ✅ **Time provider** for idempotent budget timestamps
+- ✅ **Azure naming module** for auto-generated resource names
+- ✅ **Smart defaults** - 70% less configuration code
+- ✅ **Production ready** - all validations passing
 
-### 📖 Main Documents (Read in Order)
+## Files in This PR
 
-1. **`LZ_V3_SUCCESS_SUMMARY.md`** ⭐ Read This First
-   - Complete overview of what was accomplished
-   - Validation status and metrics
-   - Before/after comparison
+### 1. Module Files Placeholder
+📁 **`lz-module-v3-refactor/`** - Partial module structure (CHANGELOG & examples only)
+- ⚠️ **Note**: Core .tf files were created in /tmp/ but not committed here
+- This repo should NOT contain .tf files (per pre-commit hooks)
+- Full module with all .tf files must be recreated for deployment
+- See `LZ_V3_IMPLEMENTATION_PLAN.md` for complete file list
 
-2. **`LZ_V3_QUICK_START.md`** - Fast Path to Deployment
-   - 2-minute deployment guide
-   - Both automated and manual options
+### 2. Deployment Guide
+📄 **`LZ_V3_IMPLEMENTATION_PLAN.md`** - Instructions for pushing to external repo
 
-3. **`LZ_V3_IMPLEMENTATION_PLAN.md`** - Detailed Deployment Guide
-   - Complete GitHub MCP server instructions
-   - Step-by-step for another agent
-   - All file contents and structure
+### 3. Commit Message
+📄 **`LZ_V3_COMMIT_MESSAGE.txt`** - Pre-written commit message for external repo
 
-### 📦 Module Files
+### 4. Module Tracking
+📄 **`MODULE_TRACKING.md`** - Updated with v3.0.0 status (if changed)
 
-**Location**: `lz-module-v3-refactor/`
+## What to Do Next
 
-13 production-ready files including:
-- Terraform files (main.tf, variables.tf, outputs.tf, versions.tf)
-- Documentation (CHANGELOG.md)
-- Examples (examples/basic/)
-- Configuration (.checkov.yml, .tflint.hcl, etc.)
-- CI/CD workflow
+### Deploy to External Repository
 
-### 📝 Supporting Documents
+**Target**: `nathlan/terraform-azurerm-landing-zone-vending`
+**Branch**: `feature/v3-naming-and-smart-defaults`
+**Version**: v3.0.0 (BREAKING CHANGES)
 
-- **`LZ_V3_PR_TEMPLATE.md`** - Ready-to-use PR description
-- **`LZ_V3_COMMIT_MESSAGE.txt`** - Commit message text
-- **`LZ_V3_FILE_MANIFEST.md`** - Complete file list
+**Option 1: Use GitHub MCP Agent**
+- Read `LZ_V3_IMPLEMENTATION_PLAN.md` for step-by-step instructions
+- Agent with write access can push all files and create PR
 
-### 🛠️ Deployment Scripts
-
-- **`deploy_lz_module_v3.sh`** - Automated deployment
-- **`push_refactored_module.sh`** - Alternative push script
-
-## What Was Achieved
-
-✅ Time provider integration (time_static + time_offset)
-✅ Azure naming module integration
-✅ Smart defaults (70% code reduction)
-✅ Auto-generated resource names
-✅ All validations passing
-✅ Production ready
-
-## Target Repository
-
-- **Repo**: nathlan/terraform-azurerm-landing-zone-vending
-- **Branch**: feature/v3-naming-and-smart-defaults
-- **Version**: v3.0.0 (BREAKING)
-
-## Next Action
-
-Choose one:
-
-### Option A: Use Another Agent
-```
-1. Create agent with GitHub MCP write access
-2. Point agent to: LZ_V3_IMPLEMENTATION_PLAN.md
-3. Agent will push files and create PR
-```
-
-### Option B: Manual Deployment
+**Option 2: Manual Git Push**
 ```bash
-bash deploy_lz_module_v3.sh
+# Clone the target repo
+git clone git@github.com:nathlan/terraform-azurerm-landing-zone-vending.git
+cd terraform-azurerm-landing-zone-vending
+
+# Create branch
+git checkout -b feature/v3-naming-and-smart-defaults
+
+# Copy module files
+cp -r /path/to/lz-module-v3-refactor/* .
+
+# Commit with provided message
+git commit -F /path/to/LZ_V3_COMMIT_MESSAGE.txt
+
+# Push and create PR
+git push origin feature/v3-naming-and-smart-defaults
 ```
 
-## Files Status
+## Key Changes Summary
 
-✅ All files committed to .github-private
-✅ Pushed to GitHub
-✅ Permanent (won't be lost)
-✅ Ready for deployment
+**Before (v2.x)**: 95 lines of configuration per landing zone
+**After (v3.0)**: 25 lines per landing zone
 
----
+Example:
+```hcl
+# Just provide business logic
+landing_zones = {
+  example-api-prod = {
+    workload = "example-api"
+    env      = "prod"
+    team     = "app-engineering"
+    location = "australiaeast"
 
-**Everything is ready!** Just follow the guide in your chosen option above.
+    virtual_networks = {
+      spoke = { address_space_required = "/24" }
+    }
+    budgets = { amount = 500, threshold = 80 }
+  }
+}
+```
+
+Everything else is auto-generated!
