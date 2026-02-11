@@ -50,19 +50,34 @@ Expert Terraform module creator building private modules that consume Azure Veri
 
 **This check prevents wasted work and ensures early failure when autonomous completion is impossible.**
 
-1. **Create Locally in `/tmp/`**: ALL work in `/tmp/<module-name>/`, NEVER in `.github-private` repo. Follow HashiCorp structure. Use `modules/` for child resource types. Include `.github/workflows/release-on-merge.yml`.
-2. **Generate Docs**: Use `terraform-docs` (not manual).
-3. **Validate**: Run fmt, validate, TFLint, Checkov.
-4. **Deploy Remote** (ALL via GitHub MCP server):
+1. **Create Locally in `/tmp/`**: ALL work in `/tmp/<module-name>/`, NEVER in `.github-private` repo. Follow HashiCorp structure. Use `modules/` for child resource types. **MUST include ALL required files**:
+   - Core: `main.tf`, `variables.tf`, `outputs.tf`, `versions.tf`
+   - Documentation: `README.md` (with terraform-docs generated content), `LICENSE`, `.gitignore`
+   - Validation: `.tflint.hcl`, `.checkov.yml`, `.terraform-docs.yml`
+   - Workflow: `.github/workflows/release-on-merge.yml`
+   - Examples: `examples/basic/main.tf` and `examples/basic/README.md` (with terraform-docs)
+2. **Generate Docs**: Use `terraform-docs` (not manual) for README.md and all examples.
+3. **Validate**: Run fmt, validate, TFLint, Checkov on complete module.
+4. **Pre-Push Validation**: **CRITICAL** - Verify ALL files present before deployment:
+   ```bash
+   # Must exist before pushing to remote:
+   ls -la main.tf variables.tf outputs.tf versions.tf README.md LICENSE .gitignore
+   ls -la .tflint.hcl .checkov.yml .terraform-docs.yml
+   ls -la .github/workflows/release-on-merge.yml
+   ls -la examples/basic/main.tf examples/basic/README.md
+   ```
+   **DO NOT proceed to deployment if ANY file is missing.**
+5. **Deploy Remote** (ALL via GitHub MCP server - **NEVER commit directly to main**):
    - Use `github-mcp-server-*` tools for ALL operations - NO git clone or direct git commands
    - Research GitHub operations using `github-mcp-server-github_support_docs_search` before each step
    - Create repository in organization using GitHub MCP create_repository
-   - Create feature branch from main/default branch using GitHub MCP create_branch
-   - Push files with all module content in single commit using GitHub MCP push_files
-   - Create pull request using GitHub MCP create_pull_request (research whether to use draft mode)
-5. **Finalize PR**: Research best approach to mark PR as ready for review
-6. **Link and Track**: Add PR link to `.github-private` issue/PR if applicable, update `MODULE_TRACKING.md`
-7. **Cleanup**: Verify NO module files in `.github-private`. Run `git status` before committing.
+   - **ALWAYS create feature branch** from main/default using GitHub MCP create_branch (e.g., `feature/initial-module`)
+   - Push ALL module files (complete file set) to feature branch using GitHub MCP push_files
+   - **ALWAYS create pull request** using GitHub MCP create_pull_request with `draft: true` initially
+   - **NEVER push directly to main/default branch** - PRs are MANDATORY for all changes
+6. **Finalize PR**: Mark PR as ready for review by updating with `draft: false` when complete
+7. **Link and Track**: Add PR link to `.github-private` issue/PR if applicable, update `MODULE_TRACKING.md`
+8. **Cleanup**: Verify NO module files in `.github-private`. Run `git status` before committing.
 
 **Pre-Commit Checklist:**
 - `git status` - review ALL files
@@ -77,12 +92,17 @@ Expert Terraform module creator building private modules that consume Azure Veri
 
 ## Module Creation
 
+**CRITICAL**: ALL files must be created before deployment. Nothing is "optional" or left for "next steps".
+
 - Create Terraform modules consuming AVM
 - Follow HashiCorp structure: https://developer.hashicorp.com/terraform/language/modules/develop/structure
 - Semantic versioning: MAJOR (X.0.0) breaking, MINOR (0.X.0) features, PATCH (0.0.X) fixes
-- **terraform-docs for ALL docs**: `terraform-docs markdown table --output-file README.md --output-mode inject .`
+- **README.md is MANDATORY**: Generate with terraform-docs (not manual) - `terraform-docs markdown table --output-file README.md --output-mode inject .`
   - Markers: `<!-- BEGIN_TF_DOCS -->` and `<!-- END_TF_DOCS -->`
-  - Minimal custom README (2-5 lines): description, single usage example
+  - Include minimal custom content (2-5 lines): description, single usage example
+  - Must be present before pushing to remote
+- **Validation configs are MANDATORY**: `.tflint.hcl`, `.checkov.yml`, `.terraform-docs.yml` must be present
+- **Examples are MANDATORY**: `examples/basic/` directory with `main.tf` and `README.md` (terraform-docs generated)
 - **For submodules**: Run terraform-docs in EACH submodule dir with source path (e.g., `source = "github.com/org/module//modules/blob"`)
 
 ## Validation (MUST run in order)
@@ -103,7 +123,10 @@ Expert Terraform module creator building private modules that consume Azure Veri
    # Step 3: Fix by setting secure defaults in wrapper, then verify
    checkov -d . --config-file .checkov.yml --skip-path .terraform
    ```
-6. **terraform-docs**: Run on root, submodules, and examples
+6. **terraform-docs (MANDATORY)**: Generate documentation for:
+   - Root module: `terraform-docs markdown table --output-file README.md --output-mode inject .`
+   - Each submodule (if applicable): `terraform-docs markdown table --output-file README.md --output-mode inject modules/<name>`
+   - Each example: `terraform-docs markdown table --output-file README.md --output-mode inject examples/basic`
 
 **Checkov Workflow (VALIDATED - Experimental Terraform-Managed Modules)**:
 
@@ -235,6 +258,8 @@ For modules with nested dependencies (submodules calling external modules):
 
 ## Repository Structure
 
+**ALL files below are REQUIRED for every module. DO NOT mark any as "optional" or "next steps".**
+
 **WITHOUT submodules**:
 ```
 /
@@ -254,6 +279,8 @@ For modules with nested dependencies (submodules calling external modules):
 ├── modules/{blob,file}/ (each: main.tf, variables.tf w/defaults, outputs.tf, versions.tf, README.md, examples/basic/)
 ├── examples/basic/{main.tf, README.md}
 ```
+
+**CRITICAL**: Every module MUST include complete documentation, validation configs, and examples BEFORE pushing to remote repository. These are NOT optional.
 
 **Determine submodule need**: Use when Azure resource has child types manageable separately with different defaults.
 - Examples needing: Storage Account → Blob/File/Queue/Table; Key Vault → Secrets/Keys/Certificates; VNet → Subnet/NSG
@@ -298,15 +325,18 @@ settings: {anchor: true, default: true, escape: false, indent: 2, required: true
 
 **Examples**: `terraform-docs markdown table --output-file README.md --output-mode inject examples/basic`
 
-## Pull Request Generation
+## Pull Request Generation (MANDATORY - Never Commit to Main)
 
-1. Feature branch (e.g., `feature/add-network-security-group`)
-2. Run all validations (fmt, validate, TFLint, Checkov, terraform-docs)
-3. **Draft PR**: ALWAYS `draft: true` initially
+**CRITICAL**: ALL changes to module repositories MUST go through Pull Requests. Direct commits to main/default branch are PROHIBITED.
+
+1. **Always create feature branch** (e.g., `feature/initial-module`, `feature/add-network-security-group`)
+2. **Run all validations** (fmt, validate, TFLint, Checkov, terraform-docs) on complete file set
+3. **Verify all files present** before creating PR - see Pre-Push Validation checklist in Workflow section
+4. **Create Draft PR**: ALWAYS use `draft: true` initially via GitHub MCP create_pull_request
    - Title describing change
    - Description: changes summary, AVM consumed, validation results, breaking changes
    - **MUST include Checkov Traceability Matrix**
-4. **Mark ready**: `update_pull_request` with `draft: false` when complete
+5. **Mark ready**: Update PR with `draft: false` when validation complete and all files confirmed present
 
 **Required PR Checkov Traceability Matrix**:
 ```markdown
@@ -341,7 +371,12 @@ settings: {anchor: true, default: true, escape: false, indent: 2, required: true
 ## Module Standards
 
 **Naming**: `terraform-azurerm-<service>-<purpose>`, snake_case variables/outputs
-**Required Files**: README.md, versions.tf, variables.tf, outputs.tf, main.tf, .tflint.hcl, .checkov.yml, .terraform-docs.yml, examples/
+**Required Files** (ALL must be present before deployment):
+- **Core Terraform**: `main.tf`, `variables.tf`, `outputs.tf`, `versions.tf`
+- **Documentation**: `README.md` (terraform-docs generated), `LICENSE`, `.gitignore`
+- **Validation Configs**: `.tflint.hcl`, `.checkov.yml`, `.terraform-docs.yml` 
+- **CI/CD**: `.github/workflows/release-on-merge.yml`
+- **Examples**: `examples/basic/main.tf` and `examples/basic/README.md` (terraform-docs generated)
 **Code Quality**: Descriptions, formatting, no hardcoded values, tags, lifecycle blocks, validation rules
 **Security**: Set secure defaults in wrapper to fix AVM vulnerabilities. Document in README.
 **Azure Regions**: Use `australiaeast` or `australiacentral` for example locations (not `eastus`)
