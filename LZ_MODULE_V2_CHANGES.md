@@ -52,7 +52,7 @@ Initial: { "vnet_a" = 28, "vnet_b" = 26 }
 
 Later add: { "vnet_a" = 28, "vnet_b" = 26, "vnet_c" = 27 }
 → vnet_a: 10.100.0.0/28 (unchanged)
-→ vnet_b: 10.100.0.16/26 (unchanged)  
+→ vnet_b: 10.100.0.16/26 (unchanged)
 → vnet_c: 10.100.0.80/27 (new)
 ```
 
@@ -96,11 +96,11 @@ All updated files are in `/tmp/lz-module-update/`:
 
 ## Validation Status
 
-✅ **Terraform init**: PASSED  
-✅ **Terraform fmt**: PASSED  
-✅ **Terraform validate**: PASSED  
-⏳ **TFLint**: Not yet run  
-⏳ **Checkov**: Not yet run  
+✅ **Terraform init**: PASSED
+✅ **Terraform fmt**: PASSED
+✅ **Terraform validate**: PASSED
+⏳ **TFLint**: Not yet run
+⏳ **Checkov**: Not yet run
 
 ## Next Steps
 

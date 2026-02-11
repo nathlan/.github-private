@@ -9,7 +9,7 @@ I've successfully implemented v2.0.0 of the Landing Zone module with the breakin
 1. **IP automation is now DEFAULT** (not backward compatible)
    - Removed the `ip_address_automation_enabled` toggle
    - `base_address_space` and `vnet_prefix_sizes` are now **required variables**
-   
+
 2. **Prevents address reordering when adding new VNets**
    - Set `address_prefix_efficient_mode = false` in the AVM utility call
    - Addresses are allocated in **lexicographical order** by map key
@@ -29,7 +29,7 @@ base_address_space = "10.100.0.0/16"
 
 vnet_prefix_sizes = {
   "vnet_a" = 28
-  "vnet_b" = 26  
+  "vnet_b" = 26
   "vnet_c" = 26
   "vnet_d" = 27
 }
@@ -52,7 +52,7 @@ All updated files are validated and ready in `/tmp/lz-module-update/`:
 
 ```
 ├── main.tf (68 lines) - No conditionals, stable allocation
-├── variables.tf (285 lines) - Required base_address_space & vnet_prefix_sizes  
+├── variables.tf (285 lines) - Required base_address_space & vnet_prefix_sizes
 ├── outputs.tf (74 lines) - Always returns calculated values
 ├── README.md (258 lines) - Full v2.0.0 docs with migration guide
 ├── versions.tf
@@ -114,7 +114,7 @@ git push origin feature/add-ip-address-automation
 
 1. **Update PR #5 description** to clearly state it's v2.0.0 with breaking changes
 2. **Run CI/CD validation** (TFLint, Checkov)
-3. **Consider PR strategy**: 
+3. **Consider PR strategy**:
    - Keep PR #5 but update title/description for v2.0.0
    - OR close PR #5 and create new PR #6 for breaking changes
 

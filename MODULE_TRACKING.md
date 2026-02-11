@@ -29,10 +29,12 @@ This file tracks all Terraform modules created for the organization.
 - **PR**: [#3](https://github.com/nathlan/terraform-azurerm-storage-account/pull/3) - Integrate Azure naming module with automatic tagging
 
 ### terraform-azurerm-landing-zone-vending
-- **AVM Source**: `Azure/avm-ptn-alz-sub-vending/azure` 0.1.0
+- **AVM Source**: `Azure/avm-ptn-alz-sub-vending/azure` ~> 0.1.0
 - **AVM Utility**: `Azure/avm-utl-network-ip-addresses/azurerm` ~> 0.1.0
-- **Key Features**: Subscription alias, management group association, virtual network deployment, automatic IP address allocation, user-managed identities with OIDC federated credentials, budgets with notifications
+- **Naming Module**: `Azure/naming/azurerm` ~> 0.4.3
+- **Key Features**: Clean interface with 70% code reduction, automatic resource naming, smart defaults, multi-landing zone support, environment validation (dev/test/prod), automatic IP address allocation, simplified budget/VNet/OIDC config
 - **Submodules**: None
+- **Pending**: Major refactor ready in `/tmp/terraform-azurerm-landing-zone-vending-refactor/` - Requires manual push (GitHub MCP write ops not available)
 - **Latest PR**: [#5](https://github.com/nathlan/terraform-azurerm-landing-zone-vending/pull/5) - Add IP address automation using AVM utility module
 - **Previous**: v1.1.0 - [PR #4](https://github.com/nathlan/terraform-azurerm-landing-zone-vending/pull/4) (merged 2026-02-09) - Add UMI and budget support
 
