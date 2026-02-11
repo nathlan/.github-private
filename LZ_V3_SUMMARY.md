@@ -100,7 +100,7 @@ role_assignments = {
 - 🎯 Azure naming module (Azure/naming/azurerm ~> 0.4.3)
 - 🎯 Time provider for budgets (hashicorp/time >= 0.9, < 1.0)
 - 🎯 Landing zones map (multi-LZ support)
-- 🎯 Smart defaults (70% code reduction: 95→22 lines)
+- 🎯 Smart defaults (70% code reduction: 95→25 lines)
 - 🎯 Flattened networking (1 spoke VNet per LZ)
 - 🎯 Subnet support with auto CIDR calculation
 - 🎯 Environment validation (dev/test/prod)

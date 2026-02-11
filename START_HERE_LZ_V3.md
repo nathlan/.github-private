@@ -77,7 +77,7 @@ See `LZ_V3_NAMING_REQUIREMENTS.md` for complete details.
 
 ## Key Changes Summary
 
-**Before (v2.x)**: 95 lines of configuration per landing zone
+**Before (v2.x)**: 95 lines of configuration per landing zone  
 **After (v3.0)**: 25 lines per landing zone
 
 Example:
