@@ -48,11 +48,19 @@ Build an **ALZ Vending Orchestrator Agent** — a pure orchestrator that enables
 - `role_assignment_enabled`, `role_assignments`
 - `virtual_network_enabled`, `virtual_networks`
 
-**Not yet exposed (prerequisite enhancement needed):**
-- `umi_enabled`, `user_managed_identities` (for UMI + federated credentials)
-- `budget_enabled`, `budgets`
+**Module v1.1.0+ capabilities (AVAILABLE):**
+- All core subscription/RG/VNet/RBAC variables
+- `umi_enabled`, `user_managed_identities` (for UMI + federated credentials) ✅
+- `budget_enabled`, `budgets` ✅
 
-> **Prerequisite:** The `terraform-module-creator` agent should be tasked with adding UMI + budget pass-through variables to the private wrapper module before this orchestrator can fully automate workload identity federation. Until then, the orchestrator's `.tfvars` output will include the UMI/budget section commented out with a note, or the wrapper module will need to be extended first.
+**Module v2.0.0+ capabilities (pending PR #5):**
+- Enhanced IP address automation with AVM utility module
+
+**Module v3.0.0 capabilities (planned):**
+- Azure naming module integration with `landing_zones` map structure
+- Smart defaults and 70% code reduction
+
+> **Status:** As of v1.1.0 (merged PR #4), the module fully supports UMI with OIDC federation and budget creation. The orchestrator can now generate complete `.tfvars` files without placeholders.
 
 ### 2.2 ALZ Infra Repo
 
@@ -224,41 +232,60 @@ virtual_networks = {
 }
 
 # --- User Managed Identity + OIDC Federation ---
-# NOTE: Requires UMI variables to be exposed in the private module wrapper.
-# See prerequisite in ALZ_VENDING_AGENT_PLAN.md §2.1
-#
-# umi_enabled = true
-# user_managed_identities = {
-#   deploy = {
-#     name               = "umi-{workload_name}-deploy"
-#     resource_group_key = "rg_workload"
+# Module v1.1.0+ supports UMI with OIDC federation for GitHub Actions
+umi_enabled = true
+user_managed_identities = {
+  deploy = {
+    name               = "umi-{workload_name}-deploy"
+    resource_group_key = "rg_workload"
 #     role_assignments = {
-#       sub_contributor = {
-#         definition     = "Contributor"
-#         relative_scope = ""
-#       }
-#     }
-#     federated_credentials_github = {
-#       prod_env = {
-#         organization = "{github_org}"
-#         repository   = "{repo_name}"
-#         entity       = "environment"
-#         value        = "production"
-#       }
-#       main_branch = {
-#         organization = "{github_org}"
-#         repository   = "{repo_name}"
-#         entity       = "branch"
-#         value        = "main"
-#       }
-#       pull_request = {
-#         organization = "{github_org}"
-#         repository   = "{repo_name}"
-#         entity       = "pull_request"
-#       }
-#     }
-#   }
-# }
+      sub_contributor = {
+        definition     = "Contributor"
+        relative_scope = ""  # Empty = subscription scope
+      }
+    }
+    federated_credentials_github = {
+      prod_env = {
+        organization = "{github_org}"
+        repository   = "{repo_name}"
+        entity       = "environment"
+        value        = "production"
+      }
+      main_branch = {
+        organization = "{github_org}"
+        repository   = "{repo_name}"
+        entity       = "branch"
+        value        = "main"
+      }
+      pull_request = {
+        organization = "{github_org}"
+        repository   = "{repo_name}"
+        entity       = "pull_request"
+      }
+    }
+  }
+}
+
+# --- Budget ---
+# Module v1.1.0+ supports budget creation with time-based configuration
+budget_enabled = true
+budgets = {
+  monthly = {
+    name           = "budget-{workload_name}-{env_short}"
+    amount         = {budget_amount}
+    time_grain     = "Monthly"
+    time_period_start = "{current_year}-01-01T00:00:00Z"
+    time_period_end   = "{next_year}-01-01T00:00:00Z"
+    notifications = {
+      actual_80_percent = {
+        enabled        = true
+        operator       = "GreaterThan"
+        threshold      = 80
+        contact_emails = ["{team_email}"]
+      }
+    }
+  }
+}
 ```
 
 ### 5.4 PR Details
@@ -553,8 +580,8 @@ lz_module_version: "~> 1.0"
 | # | Prerequisite | Status | Owner |
 |---|---|---|---|
 | 1 | Private LZ vending module exists | ✅ Done | `terraform-module-creator` |
-| 2 | LZ module exposes UMI + federated credentials variables | ❌ Needed | `terraform-module-creator` |
-| 3 | LZ module exposes budget variables | ❌ Needed | `terraform-module-creator` |
+| 2 | LZ module exposes UMI + federated credentials variables | ✅ Done (v1.1.0+) | `terraform-module-creator` |
+| 3 | LZ module exposes budget variables | ✅ Done (v1.1.0+) | `terraform-module-creator` |
 | 4 | ALZ infra repo exists with root module consuming private wrapper | ❌ Needed | Platform team / agent |
 | 5 | ALZ infra repo has CI/CD pipeline (plan on PR, apply on merge) | ❌ Needed | `cicd-workflow` agent |
 | 6 | GitHub config repo exists | ✅ Done | `github-config` agent |
@@ -601,7 +628,7 @@ output "umi_principal_ids" { ... }
 | 5 | Write Phase 3: `cicd-workflow` handoff prompt template | Agent definition | Low | Structured prompt for reusable workflow pattern |
 | 6 | Write Phase 4: Tracking & status reporting | Agent definition | Medium | Issue template, PR polling logic, completion notification |
 | 7 | Write configuration section | Agent definition | Low | Org-specific values with placeholders |
-| 8 | Enhance private LZ module (UMI + budget variables) | Module enhancement | Medium | Task for `terraform-module-creator` agent |
+| 8 | ~~Enhance private LZ module (UMI + budget variables)~~ | ✅ Completed (v1.1.0) | Low | Module now supports UMI and budgets |
 | 9 | Create/verify ALZ infra repo structure | Repo setup | Medium | Root module + tfvars pattern + CI/CD |
 | 10 | End-to-end test with sample request | Testing | High | Full flow through all phases |
 | 11 | Create `copilot-setup-steps.yml` for GitHub App token | Repo config | Low | Enables cross-repo MCP access |
@@ -619,7 +646,7 @@ output "umi_principal_ids" { ... }
 | Risk | Mitigation |
 |---|---|
 | Phase 2 PR created before Phase 1 outputs are known | Use placeholder values; update after Phase 1 apply; label `blocked` |
-| Private module doesn't expose UMI variables yet | Agent generates UMI section as comments in `.tfvars`; notes prerequisite |
+| ~~Private module doesn't expose UMI variables yet~~ | ✅ Resolved (v1.1.0) - Module now fully supports UMI and budgets |
 | VNet CIDR overlap | Orchestrator reads existing `.tfvars` files in ALZ repo to detect conflicts |
 | Agent generates invalid `.tfvars` | Agent uses known variable schema from private module; platform CI/CD validates on PR |
 | Handoff to specialist agent fails | Orchestrator provides structured prompt; user can manually invoke specialist agent |
