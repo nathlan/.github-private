@@ -37,6 +37,7 @@ An agent with GitHub MCP write access should:
 1. **Read Implementation Specifications**:
    - `LZ_V3_AGENT_DEPLOYMENT_GUIDE.md` - **START HERE** - Complete workflow
    - `LZ_V3_NAMING_REQUIREMENTS.md` - **CRITICAL** - Corrected naming patterns
+   - `LZ_V3_RESOURCE_ABBREVIATIONS_PATTERN.md` - **Pattern guide** for naming module gaps
    - `LZ_V3_IMPLEMENTATION_PLAN.md` - Technical specifications
    - `LZ_V3_REFACTORING_PLAN.md` - Detailed technical design
 
