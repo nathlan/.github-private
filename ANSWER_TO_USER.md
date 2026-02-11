@@ -35,15 +35,11 @@ But it's missing:
 
 **Example:**
 ```hcl
-# User provides simple requirements
-virtual_networks = {
-  spoke = {
-    address_space_required = "/24"  # Just the prefix size!
-    subnets = {
-      default = { subnet_prefix = "/26" }
-      api     = { subnet_prefix = "/28" }
-    }
-  }
+# User provides simple requirements (flattened - always 1 spoke VNet)
+address_space_required = "/24"  # Just the prefix size!
+subnets = {
+  default = { subnet_prefix = "/26" }
+  api     = { subnet_prefix = "/28" }
 }
 
 # Module calculates automatically:
@@ -74,14 +70,11 @@ landing_zones = {
     team     = "app-engineering"
     location = "australiaeast"
 
-    virtual_networks = {
-      spoke = {
-        address_space_required = "/24"
-        subnets = {
-          default = { subnet_prefix = "/26" }
-          api     = { subnet_prefix = "/28" }
-        }
-      }
+    # Networking - flattened (always 1 spoke VNet)
+    address_space_required = "/24"
+    subnets = {
+      default = { subnet_prefix = "/26" }
+      api     = { subnet_prefix = "/28" }
     }
 
     budgets = {

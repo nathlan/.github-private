@@ -145,15 +145,11 @@ landing_zones = {
       cost_centre = "IT-DEV-002"
     }
 
-    # Networking - simplified with subnets!
-    virtual_networks = {
-      spoke = {
-        address_space_required = "/24"  # From base_address_space
-        subnets = {
-          default = { subnet_prefix = "/26" }
-          api     = { subnet_prefix = "/28" }
-        }
-      }
+    # Networking - simplified (always 1 spoke VNet)
+    address_space_required = "/24"  # From base_address_space
+    subnets = {
+      default = { subnet_prefix = "/26" }
+      api     = { subnet_prefix = "/28" }
     }
 
     # Budget - super simple!
@@ -183,20 +179,16 @@ landing_zones = {
 
 #### Proposed Solution
 ```hcl
-# IN: landing_zones map
-virtual_networks = {
-  spoke = {
-    address_space_required = "/24"  # Just the prefix size!
-    subnets = {
-      default = {
-        name = "snet-default"  # Optional - auto-generated if not provided
-        subnet_prefix = "/26"
-      }
-      api = {
-        name = "snet-api"
-        subnet_prefix = "/28"
-      }
-    }
+# IN: landing_zones map (flattened - always 1 spoke VNet)
+address_space_required = "/24"  # Just the prefix size!
+subnets = {
+  default = {
+    name = "snet-default"  # Optional - auto-generated if not provided
+    subnet_prefix = "/26"
+  }
+  api = {
+    name = "snet-api"
+    subnet_prefix = "/28"
   }
 }
 
@@ -375,14 +367,12 @@ variable "landing_zones" {
     subscription_devtest_enabled = optional(bool)  # Replaces subscription_workload
     subscription_tags            = optional(map(string), {})
 
-    # Optional: Virtual networks
-    virtual_networks = optional(map(object({
-      address_space_required = string  # e.g., "/24"
-      hub_peering_enabled    = optional(bool, true)
-      subnets = optional(map(object({
-        name          = optional(string)
-        subnet_prefix = string
-      })), {})
+    # Optional: Virtual network (flattened - always 1 spoke VNet per LZ)
+    address_space_required = optional(string)  # e.g., "/24"
+    hub_peering_enabled    = optional(bool, true)
+    subnets = optional(map(object({
+      name          = optional(string)
+      subnet_prefix = string
     })), {})
 
     # Optional: Budgets (simplified)
@@ -486,8 +476,8 @@ final_tags = {
 5. Refactor main.tf to use landing_zones map
 
 ### Phase 2: Networking Enhancement
-1. Add subnet support to virtual_networks
-2. Implement subnet CIDR calculation
+1. Flatten networking structure (remove virtual_networks map - always 1 spoke)
+2. Add subnet support with CIDR calculation
 3. Auto-generate network resource names
 4. Simplify address space configuration
 
