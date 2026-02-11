@@ -163,7 +163,7 @@ virtual_networks = {
 }
 
 # --- User Managed Identity + OIDC Federation ---
-# Module v1.1.0+ supports UMI with OIDC federation for GitHub Actions
+# Module v1.0.3+ supports UMI with OIDC federation for GitHub Actions
 umi_enabled = true
 user_managed_identities = {
   deploy = {
@@ -199,7 +199,7 @@ user_managed_identities = {
 }
 
 # --- Budget ---
-# Module v1.1.0+ supports budget creation with time-based configuration
+# Module v1.0.3+ supports budget creation with time-based configuration
 budget_enabled = true
 budgets = {
   monthly = {
@@ -474,11 +474,12 @@ default_repo_visibility: "internal"
 
 # --- Private Module ---
 lz_module_repo: "nathlan/terraform-azurerm-landing-zone-vending"
-lz_module_version: "~> 1.1"  # v1.1.0+ has UMI and budget support
+lz_module_version: "~> 1.0"  # v1.0.3 released, v1.0.4 pending PR merge
 
 # --- Module Capabilities ---
-# v1.1.0 (current): UMI with OIDC federation, budgets, IP automation
-# v2.0.0 (pending PR #5): Enhanced IP address automation with AVM utility module
+# v1.0.3 (current released): UMI with OIDC federation, budgets, base functionality
+# v1.0.4 (pending PR merge): Latest updates and improvements
+# v2.0.0 (planned): Enhanced IP address automation with AVM utility module
 # v3.0.0 (planned): Azure naming module integration, smart defaults, landing_zones map structure
 ```
 
@@ -544,6 +545,6 @@ Validate Inputs → Create .tfvars PR + Tracking Issue → Handoff to github-con
 **Key Constraints:**
 - Corp LZ only (hub-peered, management group = Corp)
 - One subscription per `.tfvars` file
-- Module v1.1.0+ supports UMI/OIDC and budgets
+- Module v1.0.3+ supports UMI/OIDC and budgets
 - Placeholder values used for cross-phase dependencies
 - Module v3.0.0 will introduce breaking changes (landing_zones map structure)

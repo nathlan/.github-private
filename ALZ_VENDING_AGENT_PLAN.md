@@ -48,19 +48,22 @@ Build an **ALZ Vending Orchestrator Agent** — a pure orchestrator that enables
 - `role_assignment_enabled`, `role_assignments`
 - `virtual_network_enabled`, `virtual_networks`
 
-**Module v1.1.0+ capabilities (AVAILABLE):**
+**Module v1.0.3+ capabilities (AVAILABLE):**
 - All core subscription/RG/VNet/RBAC variables
 - `umi_enabled`, `user_managed_identities` (for UMI + federated credentials) ✅
 - `budget_enabled`, `budgets` ✅
 
-**Module v2.0.0+ capabilities (pending PR #5):**
+**Module v1.0.4 capabilities (pending PR merge):**
+- Latest updates and improvements
+
+**Module v2.0.0+ capabilities (planned):**
 - Enhanced IP address automation with AVM utility module
 
 **Module v3.0.0 capabilities (planned):**
 - Azure naming module integration with `landing_zones` map structure
 - Smart defaults and 70% code reduction
 
-> **Status:** As of v1.1.0 (merged PR #4), the module fully supports UMI with OIDC federation and budget creation. The orchestrator can now generate complete `.tfvars` files without placeholders.
+> **Status:** As of v1.0.3 (current release), the module fully supports UMI with OIDC federation and budget creation. The orchestrator can now generate complete `.tfvars` files without placeholders.
 
 ### 2.2 ALZ Infra Repo
 
@@ -232,7 +235,7 @@ virtual_networks = {
 }
 
 # --- User Managed Identity + OIDC Federation ---
-# Module v1.1.0+ supports UMI with OIDC federation for GitHub Actions
+# Module v1.0.3+ supports UMI with OIDC federation for GitHub Actions
 umi_enabled = true
 user_managed_identities = {
   deploy = {
@@ -267,7 +270,7 @@ user_managed_identities = {
 }
 
 # --- Budget ---
-# Module v1.1.0+ supports budget creation with time-based configuration
+# Module v1.0.3+ supports budget creation with time-based configuration
 budget_enabled = true
 budgets = {
   monthly = {
@@ -580,8 +583,8 @@ lz_module_version: "~> 1.0"
 | # | Prerequisite | Status | Owner |
 |---|---|---|---|
 | 1 | Private LZ vending module exists | ✅ Done | `terraform-module-creator` |
-| 2 | LZ module exposes UMI + federated credentials variables | ✅ Done (v1.1.0+) | `terraform-module-creator` |
-| 3 | LZ module exposes budget variables | ✅ Done (v1.1.0+) | `terraform-module-creator` |
+| 2 | LZ module exposes UMI + federated credentials variables | ✅ Done (v1.0.3+) | `terraform-module-creator` |
+| 3 | LZ module exposes budget variables | ✅ Done (v1.0.3+) | `terraform-module-creator` |
 | 4 | ALZ infra repo exists with root module consuming private wrapper | ❌ Needed | Platform team / agent |
 | 5 | ALZ infra repo has CI/CD pipeline (plan on PR, apply on merge) | ❌ Needed | `cicd-workflow` agent |
 | 6 | GitHub config repo exists | ✅ Done | `github-config` agent |
@@ -628,7 +631,7 @@ output "umi_principal_ids" { ... }
 | 5 | Write Phase 3: `cicd-workflow` handoff prompt template | Agent definition | Low | Structured prompt for reusable workflow pattern |
 | 6 | Write Phase 4: Tracking & status reporting | Agent definition | Medium | Issue template, PR polling logic, completion notification |
 | 7 | Write configuration section | Agent definition | Low | Org-specific values with placeholders |
-| 8 | ~~Enhance private LZ module (UMI + budget variables)~~ | ✅ Completed (v1.1.0) | Low | Module now supports UMI and budgets |
+| 8 | ~~Enhance private LZ module (UMI + budget variables)~~ | ✅ Completed (v1.0.3) | Low | Module now supports UMI and budgets |
 | 9 | Create/verify ALZ infra repo structure | Repo setup | Medium | Root module + tfvars pattern + CI/CD |
 | 10 | End-to-end test with sample request | Testing | High | Full flow through all phases |
 | 11 | Create `copilot-setup-steps.yml` for GitHub App token | Repo config | Low | Enables cross-repo MCP access |
@@ -646,7 +649,7 @@ output "umi_principal_ids" { ... }
 | Risk | Mitigation |
 |---|---|
 | Phase 2 PR created before Phase 1 outputs are known | Use placeholder values; update after Phase 1 apply; label `blocked` |
-| ~~Private module doesn't expose UMI variables yet~~ | ✅ Resolved (v1.1.0) - Module now fully supports UMI and budgets |
+| ~~Private module doesn't expose UMI variables yet~~ | ✅ Resolved (v1.0.3) - Module now fully supports UMI and budgets |
 | VNet CIDR overlap | Orchestrator reads existing `.tfvars` files in ALZ repo to detect conflicts |
 | Agent generates invalid `.tfvars` | Agent uses known variable schema from private module; platform CI/CD validates on PR |
 | Handoff to specialist agent fails | Orchestrator provides structured prompt; user can manually invoke specialist agent |
