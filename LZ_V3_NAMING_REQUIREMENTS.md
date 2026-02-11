@@ -9,6 +9,16 @@ This document provides the **CORRECTED** naming requirements for the Landing Zon
 **IMPORTANT**: Always check the Azure naming module outputs to see what's available:
 https://registry.terraform.io/modules/Azure/naming/azurerm/latest?tab=outputs
 
+### Verified Azure Naming Module Support (v0.4.3)
+
+Based on actual module inspection:
+- ✅ **resource_group** - slug: `rg` - SUPPORTED
+- ✅ **user_assigned_identity** - slug: `uai` - SUPPORTED
+- ✅ **virtual_network** - slug: `vnet` - SUPPORTED
+- ✅ **subnet** - slug: `snet` - SUPPORTED
+- ❌ **subscription** - NOT SUPPORTED (only servicebus_subscription exists)
+- ❌ **consumption_budget** - NOT SUPPORTED
+
 ### Resource Abbreviations for Naming Module Gaps
 
 For resource types NOT supported by the Azure naming module, use a **locals block** with configurable abbreviations:
@@ -50,35 +60,53 @@ locals {
 
 ### ✅ Use Azure Naming Module (Azure/naming/azurerm ~> 0.4.3)
 
-The following resources use the Azure naming module with suffix `[workload, env]`:
+The following resources use the Azure naming module:
 
-- **Virtual Networks**: `module.naming[].virtual_network.name`
+- **Virtual Networks**: `module.naming[each.key].virtual_network.name`
+  - Module slug: `vnet`
+  - Suffix: `[workload, env]`
   - Generated format: `vnet-{workload}-{env}`
   - Example: `vnet-example-api-prod`
 
-- **Subnets**: `module.naming[].subnet.name`
+- **Subnets**: `module.naming[each.key].subnet.name`
+  - Module slug: `snet`
+  - Suffix: `[workload, env, purpose]`
   - Generated format: `snet-{workload}-{env}-{purpose}`
   - Example: `snet-example-api-prod-default`
 
-- **User Assigned Identities**: `module.naming[].user_assigned_identity.name`
-  - Generated format: `id-{workload}-{env}` (then append `-plan` or `-deploy`)
-  - Example: `id-example-api-prod-plan`, `id-example-api-prod-deploy`
+- **User Assigned Identities**: `module.naming[each.key].user_assigned_identity.name`
+  - Module slug: `uai` (NOT "id" or "umi")
+  - Suffix: `[workload, env, purpose]` or append purpose after
+  - Generated format: `uai-{workload}-{env}-{purpose}`
+  - Example: `uai-example-api-prod-plan`, `uai-example-api-prod-deploy`
 
-### ❌ DO NOT Use Naming Module (Custom Prefixes)
+- **Resource Groups**: `module.naming[each.key].resource_group.name`  
+  - Module slug: `rg`
+  - Suffix: `[purpose, workload, env]` - **PURPOSE FIRST**
+  - Generated format: `rg-{purpose}-{workload}-{env}`
+  - Example: `rg-identity-example-api-prod`, `rg-network-example-api-prod`
+
+**Implementation Note**: For resource groups, we need separate naming module instances per purpose OR use custom suffixes in the module call.
+
+### ❌ DO NOT Use Naming Module (Not Available)
 
 The following resources require **CUSTOM naming** because they are NOT available in the Azure naming module:
 
 #### 1. Subscriptions
 ```hcl
 # Use resource abbreviations from locals
-local.subscription_names = {
-  for lz_key, lz in var.landing_zones : 
-    lz_key => "${local.resource_abbreviations.subscription}-${lz.workload}-${lz.env}"
+locals {
+  subscription_names = {
+    for lz_key, lz in var.landing_zones : 
+      lz_key => "${local.resource_abbreviations.subscription}-${lz.workload}-${lz.env}"
+  }
 }
 
 # Format: {abbreviation}-{workload}-{env}
 # Example: sub-example-api-prod
 ```
+
+**Reason**: The Azure naming module does NOT have a `subscription` output (only `servicebus_subscription`).
 
 #### 2. Budgets
 ```hcl
@@ -89,31 +117,7 @@ name = "${local.resource_abbreviations.budget}-${each.value.workload}-${each.val
 # Example: budget-example-api-prod
 ```
 
-**Note**: The Azure naming module does NOT have a `consumption_budget` output. Verify at:
-https://registry.terraform.io/modules/Azure/naming/azurerm/latest?tab=outputs
-
-#### 3. Resource Groups ⚠️ CRITICAL CORRECTION
-```hcl
-# Use resource abbreviations from locals with PURPOSE PREFIX
-resource_groups = {
-  rg_identity = {
-    name = "${local.resource_abbreviations.resource_group}-identity-${each.value.workload}-${each.value.env}"
-  }
-  rg_network = {
-    name = "${local.resource_abbreviations.resource_group}-network-${each.value.workload}-${each.value.env}"
-  }
-}
-
-# Format: {abbreviation}-{purpose}-{workload}-{env}
-# Examples: 
-#   rg-identity-example-api-prod
-#   rg-network-example-api-prod
-```
-
-**⚠️ IMPORTANT**: The purpose (`identity`, `network`) comes FIRST, before workload and env.
-
-**❌ WRONG**: `rg-example-api-prod-identity`  
-**✅ CORRECT**: `rg-identity-example-api-prod`
+**Reason**: The Azure naming module does NOT have a `consumption_budget` output.
 
 ## Implementation Pattern
 
@@ -128,9 +132,8 @@ locals {
   # Resource abbreviations for types NOT in Azure naming module
   # Platform team can update these - NOT exposed to end users via tfvars
   resource_abbreviations = {
-    subscription   = "sub"
-    budget         = "budget"
-    resource_group = "rg"
+    subscription = "sub"
+    budget       = "budget"
   }
 }
 
@@ -144,6 +147,26 @@ module "naming" {
 
   for_each = var.landing_zones
   suffix   = [each.value.workload, each.value.env]
+}
+
+# ========================================
+# Azure Naming Module for Resource Groups (with purpose)
+# ========================================
+
+module "naming_rg_identity" {
+  source  = "Azure/naming/azurerm"
+  version = "~> 0.4.3"
+
+  for_each = var.landing_zones
+  suffix   = ["identity", each.value.workload, each.value.env]
+}
+
+module "naming_rg_network" {
+  source  = "Azure/naming/azurerm"
+  version = "~> 0.4.3"
+
+  for_each = var.landing_zones
+  suffix   = ["network", each.value.workload, each.value.env]
 }
 
 # ========================================
@@ -173,14 +196,14 @@ module "landing_zone" {
   subscription_display_name = local.subscription_names[each.key]
   subscription_alias_name   = local.subscription_names[each.key]
 
-  # Resource groups (using abbreviation from locals with purpose prefix)
+  # Resource groups (using naming module with purpose suffix)
   resource_groups = {
     rg_identity = {
-      name     = "${local.resource_abbreviations.resource_group}-identity-${each.value.workload}-${each.value.env}"
+      name     = module.naming_rg_identity[each.key].resource_group.name
       location = each.value.location
     }
     rg_network = {
-      name     = "${local.resource_abbreviations.resource_group}-network-${each.value.workload}-${each.value.env}"
+      name     = module.naming_rg_network[each.key].resource_group.name
       location = each.value.location
     }
   }
@@ -193,14 +216,16 @@ module "landing_zone" {
     }
   }
 
-  # User Managed Identities (naming module + suffix)
+  # User Managed Identities (naming module)
   user_managed_identities = {
     plan = {
-      name = "${module.naming[each.key].user_assigned_identity.name}-plan"
+      name = module.naming[each.key].user_assigned_identity.name
+      # Generates: uai-example-api-prod (suffix from naming module)
       # ... other config
     }
     deploy = {
-      name = "${module.naming[each.key].user_assigned_identity.name}-deploy"
+      name = module.naming[each.key].user_assigned_identity.name
+      # Generates: uai-example-api-prod (suffix from naming module)
       # ... other config
     }
   }
@@ -251,16 +276,15 @@ user_managed_identities = {
 
 ## Naming Summary Table
 
-| Resource Type | Naming Source | Pattern | Example |
-|---------------|---------------|---------|---------|
-| Subscription | Custom | `sub-{workload}-{env}` | `sub-example-api-prod` |
-| Resource Group (Identity) | Custom | `rg-identity-{workload}-{env}` | `rg-identity-example-api-prod` |
-| Resource Group (Network) | Custom | `rg-network-{workload}-{env}` | `rg-network-example-api-prod` |
-| Virtual Network | Naming Module | `vnet-{workload}-{env}` | `vnet-example-api-prod` |
-| Subnet | Naming Module | `snet-{workload}-{env}-{name}` | `snet-example-api-prod-default` |
-| User Assigned Identity (Plan) | Naming Module + Suffix | `id-{workload}-{env}-plan` | `id-example-api-prod-plan` |
-| User Assigned Identity (Deploy) | Naming Module + Suffix | `id-{workload}-{env}-deploy` | `id-example-api-prod-deploy` |
-| Budget | Custom | `budget-{workload}-{env}` | `budget-example-api-prod` |
+| Resource Type | Naming Source | Module Slug | Pattern | Example |
+|---------------|---------------|-------------|---------|---------|
+| Subscription | Custom | N/A | `sub-{workload}-{env}` | `sub-example-api-prod` |
+| Resource Group (Identity) | Naming Module | `rg` | `rg-identity-{workload}-{env}` | `rg-identity-example-api-prod` |
+| Resource Group (Network) | Naming Module | `rg` | `rg-network-{workload}-{env}` | `rg-network-example-api-prod` |
+| Virtual Network | Naming Module | `vnet` | `vnet-{workload}-{env}` | `vnet-example-api-prod` |
+| Subnet | Naming Module | `snet` | `snet-{workload}-{env}-{purpose}` | `snet-example-api-prod-default` |
+| User Assigned Identity | Naming Module | `uai` | `uai-{workload}-{env}` | `uai-example-api-prod` |
+| Budget | Custom | N/A | `budget-{workload}-{env}` | `budget-example-api-prod` |
 
 ## Validation Checklist
 
