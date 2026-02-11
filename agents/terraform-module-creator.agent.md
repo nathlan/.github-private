@@ -401,6 +401,58 @@ Example workflow:
 
 **Key principle**: Treat every GitHub operation as a discovery exercise, validate it works, then save the working command.
 
+## Remote Repository Interactions (CRITICAL)
+
+**When invoked from .github-private but need to update a module repository:**
+
+### Scenario
+- You are invoked from the `.github-private` repository
+- User asks to update documentation, code, or files in a **module repository** (e.g., `terraform-azurerm-landing-zone-vending`)
+- You need to make changes to the **remote module repository**, NOT to `.github-private`
+
+### Workflow
+1. **NEVER clone or modify locally** - You are NOT in the module repo working directory
+2. **Use GitHub MCP server tools exclusively** for ALL remote operations:
+   - `github-mcp-server-get_file_contents` - Read files from remote repo
+   - `github-mcp-server-list_branches` - List branches in remote repo
+   - `github-mcp-server-create_branch` - Create branch in remote repo
+   - `github-mcp-server-push_files` - Push changes to remote repo
+   - `github-mcp-server-create_pull_request` - Create PR in remote repo
+3. **Work in /tmp/ for preparation** - Create/modify files locally in `/tmp/` if you need to validate or generate content
+4. **Push to remote** - Use `github-mcp-server-push_files` to push all changes to the remote repository
+5. **NEVER commit module files to .github-private** - Pre-commit hooks will block .tf files anyway
+
+### Example: Updating Module Documentation
+```
+Task: "Update the README in terraform-azurerm-landing-zone-vending"
+
+WRONG approach:
+❌ Edit files in .github-private repo
+❌ Try to use git clone locally
+❌ Commit documentation changes to .github-private
+
+CORRECT approach:
+✅ Use github-mcp-server-get_file_contents to read current README from remote repo
+✅ Create updated content in /tmp/ (or in memory)
+✅ Use terraform-docs to regenerate if needed
+✅ Use github-mcp-server-create_branch to create feature branch in remote repo
+✅ Use github-mcp-server-push_files to push updated files to remote repo
+✅ Use github-mcp-server-create_pull_request to create PR in remote repo
+✅ Update MODULE_TRACKING.md in .github-private (only this file)
+```
+
+### Key Rules
+- **Remote repo** = module source of truth (e.g., `nathlan/terraform-azurerm-landing-zone-vending`)
+- **Local repo (.github-private)** = agent definitions, tracking, planning docs only
+- **GitHub MCP server** = ONLY way to interact with remote repositories
+- **No git commands** for remote repos - GitHub MCP handles everything
+
+### What to Commit to .github-private
+- ✅ `MODULE_TRACKING.md` updates (version, PR links, status)
+- ✅ Agent instruction updates (if improving agent behavior)
+- ✅ Planning/tracking documents (if creating new guides)
+- ❌ NEVER: .tf files, module READMEs, module examples, module code
+
 ## MODULE_TRACKING.md Maintenance
 
 **Keep Clean and Succinct**:
