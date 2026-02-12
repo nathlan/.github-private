@@ -3,6 +3,9 @@
   "image": "mcr.microsoft.com/devcontainers/base:ubuntu",
 
   "features": {
+    "ghcr.io/devcontainers/features/docker-outside-of-docker:1": {
+      "version": "latest"
+    },
     "ghcr.io/devcontainers/features/terraform:1": {
       "version": "latest"
     },
@@ -28,7 +31,6 @@
         "hashicorp.terraform",
         "ms-python.python",
         "ms-python.vscode-pylance",
-        "eamodio.gitlens",
         "GitHub.copilot",
         "GitHub.copilot-chat"
       ],
