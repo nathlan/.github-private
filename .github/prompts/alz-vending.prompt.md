@@ -27,5 +27,5 @@ Validate the following landing zone request using **Phase 0** from your instruct
 1. Validate each input against the rules in Phase 0
 2. Read `terraform/terraform.tfvars` from `nathlan/alz-subscriptions` to check for duplicate keys and address space overlaps
 3. Present a confirmation summary with all validated inputs and computed values (landing zone key, env abbreviation, prefix size)
-4. **"Delegate to coding agent"** to proceed with provisioning
+4. **"Delegate to coding agent"** to proceed with provisioning ALZ subscription (Phase 1)
   
