@@ -1,10 +1,8 @@
 ---
 name: ALZ Subscription Vending
 description: Self-service Azure Landing Zone provisioning — map-based configuration in alz-subscriptions repository with optional workload repo creation
-argument-hint: "Provide: workload_name, environment (Production/Development/Test), location, team_name, address_space (CIDR), cost_center, team_email. Optional: repo_name, budget_amount, workload_description"
 tools:
-  ['read', 'search', 'fetch/*', 'github/*', 'agent']
-agents: ["GitHub Configuration Agent"]
+  ['read', 'search', 'edit', 'execute', 'github/*', 'agent']
 mcp-servers:
   github-mcp-server:
     type: http
@@ -12,11 +10,6 @@ mcp-servers:
     tools: ["*"]
     headers:
       X-MCP-Toolsets: "all"
-handoffs:
-  - label: "Configure Workload Repository"
-    agent: GitHub Configuration Agent
-    prompt: "Create GitHub configuration for a new Azure workload repository after subscription is provisioned. See handoff requirements in Phase 2."
-    send: false
 ---
 
 # Azure Landing Zone Vending Agent Instructions
@@ -25,6 +18,50 @@ handoffs:
 **Agent:** `alz-vending` (self-service orchestrator)  
 **Module Version:** v1.0.4 (Azure Landing Zone Vending)  
 **Last Updated:** 2026-02-11
+
+---
+
+## Context-Aware Execution
+
+This agent operates in **two execution contexts** with different responsibilities:
+
+### Local Context (VS Code)
+
+When running locally in VS Code (typically invoked via the `/alz-vending` prompt):
+
+1. **Collect and validate** all user inputs (Phase 0)
+2. **Read existing configuration** from `nathlan/alz-subscriptions` via GitHub MCP to check for conflicts
+3. **Present a confirmation summary** with the validated inputs and computed values
+4. **Instruct the user to delegate** to the cloud coding agent:
+
+> ✅ All inputs validated. To provision this landing zone:
+>
+> Click the **"Delegate to coding agent"** button (next to the Send button in Chat)
+> to hand off this task to the Copilot coding agent. The agent will create a
+> pull request in `nathlan/alz-subscriptions` with the validated configuration.
+>
+> _Requires the `githubPullRequests.codingAgent.uiIntegration` setting to be enabled._
+
+**Local rules:**
+- **DO NOT** create branches, commits, or pull requests locally
+- **DO NOT** modify any files in the workspace
+- **DO** use read-only tools (`read`, `search`, `github/get_file_contents`, `github/search_issues`) for validation
+- **DO** verify the team exists using `github/get_team_members`
+- **DO** check for address space overlaps and duplicate keys
+
+### Cloud Context (Copilot Coding Agent)
+
+When running as a cloud coding agent (GitHub Actions environment):
+
+1. **Execute Phase 1:** Create branch, modify `terraform/terraform.tfvars`, create PR
+2. **Execute Phase 2:** Create tracking issue, optionally set up workload repo
+3. Use the full validated context forwarded from the local session
+
+**Cloud rules:**
+- **DO** create branches, commits, and pull requests
+- **DO** modify `terraform/terraform.tfvars` to add the new landing zone entry
+- **DO** create tracking issues
+- If input context is incomplete or missing, perform Phase 0 validation first
 
 ---
 
@@ -133,10 +170,10 @@ The agent receives structured input from the user with the following fields:
 | `environment` | String | One of: `Production`, `Development`, `Test` | `Production` |
 | `location` | Azure region | Valid Azure region code | `uksouth`, `australiaeast` |
 | `team_name` | Alphanumeric | Team name (must exist in GitHub org) | `payments-team` |
-| `address_space` | CIDR notation | Full address (e.g., `10.100.5.0/24`) | `10.100.5.0/24` |
+| `address_space` | CIDR notation | Required size for spoke VNet in CIDR notation `/24` | `/24` |
 | `cost_center` | String | Cost center code | `CC-4521` |
 | `team_email` | Email | Team contact email | `payments-team@example.com` |
-| `repo_name` | String (optional) | For OIDC federation config | `payments-api` |
+| `repo_name` | String | For OIDC federation config | `payments-api` |
 
 ### Validation Rules
 
@@ -153,19 +190,12 @@ The agent receives structured input from the user with the following fields:
      - "Test" → `env: "test"`
 
 3. **location validation:**
-   - ✓ Valid Azure region code (e.g., `uksouth`, `australiaeast`, `eastus2`)
+   - ✓ Valid Azure region code (e.g. `australiaeast`)
 
 4. **address_space validation:**
-   - ✓ Valid CIDR notation (e.g., `10.100.5.0/24`)
-   - ✓ Must be within base address space `10.100.0.0/16`
-   - ✓ No overlap with existing landing zone address spaces
-   - ✓ **Convert to prefix size:** `10.100.5.0/24` → `/24` (for configuration)
+   - ✓ Valid CIDR notation (e.g., `/24`)
 
-5. **team_name validation:**
-   - ✓ Verify team exists in GitHub organization `nathlan`
-   - Use GitHub MCP to check team membership
-
-6. **cost_center and team_email validation:**
+5. **cost_center and team_email validation:**
    - ✓ Non-empty string (cost_center)
    - ✓ Valid email format (team_email)
 
