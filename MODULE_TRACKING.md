@@ -11,6 +11,7 @@ This file tracks all Terraform modules created for the organization.
 | terraform-azurerm-landing-zone-vending | [Link](https://github.com/nathlan/terraform-azurerm-landing-zone-vending) | v1.0.3 | ✅ Released | Landing zones with naming, IP automation |
 | terraform-azurerm-firewall | [Link](https://github.com/nathlan/terraform-azurerm-firewall) | v0.1.2 → v0.1.4 | 🔄 PR Open | Azure Firewall wrapper with Australian region validation |
 | terraform-azurerm-firewall-policy | [Link](https://github.com/nathlan/terraform-azurerm-firewall-policy) | v0.1.0 → v0.2.0 | 🔄 PR Open | Firewall Policy with rule collection groups |
+| terraform-azurerm-app-service | [Link](https://github.com/nathlan/terraform-azurerm-app-service) | v0.1.0 | 🚀 Created | App Service with secure defaults and naming |
 
 ## Module Details
 
@@ -48,3 +49,11 @@ This file tracks all Terraform modules created for the organization.
 - **Key Features**: Firewall Policy with application/network/NAT rule collections
 - **Submodules**: None (uses AVM submodule for rule collection groups)
 - **PR**: [#2](https://github.com/nathlan/terraform-azurerm-firewall-policy/pull/2) - Add missing module files
+
+### terraform-azurerm-app-service
+- **AVM Source**: `Azure/avm-res-web-site/azurerm` ~> 0.20.0
+- **Naming Module**: `Azure/naming/azurerm` ~> 0.4.3
+- **Key Features**: Web App / Function App support, secure defaults (TLS 1.3, HTTPS only, FTPS only), public network access disabled by default, managed identities, private endpoints, diagnostic settings
+- **Submodules**: None
+- **Repository**: https://github.com/nathlan/terraform-azurerm-app-service
+- **Status**: Core module files created in main branch, ready for first release

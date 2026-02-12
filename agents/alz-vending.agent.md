@@ -368,17 +368,11 @@ After merge:
 3. Update this issue with resource IDs
 4. _(Optional)_ Create workload repository with GitHub config agent
 ```
+Create GitHub configuration for a new workload repository using the alz-workload-template:
 
-### Part B: Optional Workload Repository Handoff
-
-**When:** After the subscription PR is merged and Terraform apply completes successfully
-
-**Context:** The OIDC federated credential created in the landing zone includes a `repository` field. If a workload repository with that name should be created, use the GitHub Configuration Agent.
-
-**Handoff Prompt to GitHub Configuration Agent:**
-
-```
-Create GitHub configuration for a new Azure workload repository:
+**CRITICAL: Use Template Repository**
+- Template: nathlan/alz-workload-template (REQUIRED for all workload repos)
+- This ensures pre-configured workflows, Terraform structure, and standards
 
 **Repository:**
 - Name: {repo_name}
@@ -395,6 +389,7 @@ Create GitHub configuration for a new Azure workload repository:
 - Require pull request reviews: 1 approval minimum
 - Require status checks: terraform-plan, security-scan
 - Require up-to-date branches: true
+- Require conversation resolution: true
 
 **Team Access:**
 - {team_name}: maintain
@@ -405,9 +400,15 @@ Create GitHub configuration for a new Azure workload repository:
   - Required reviewers: {team_name}
   - Deployment branch: main only
   - Secrets:
-    - AZURE_CLIENT_ID = "{umi_client_id}"  # From LZ outputs
+    - AZURE_CLIENT_ID_PLAN = "PENDING_SUBSCRIPTION_APPLY"
+    - AZURE_CLIENT_ID_APPLY = "PENDING_SUBSCRIPTION_APPLY"
     - AZURE_TENANT_ID = "{tenant_id}"
-    - AZURE_SUBSCRIPTION_ID = "{subscription_id}"  # From LZ outputs
+    - AZURE_SUBSCRIPTION_ID = "PENDING_SUBSCRIPTION_APPLY"
+
+**Target repo for Terraform PR:** {github_org}/github-config
+
+**Note:** The github-config agent will generate Terraform code that creates the repository from the template, including all necessary team access and branch protection rules.
+```
 
 **Target repo for Terraform PR:** nathlan/github-config
 
