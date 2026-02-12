@@ -19,7 +19,7 @@ mcp-servers:
       - get_latest_provider_version
   github-mcp-server:
     type: http
-    url: https://api.githubcopilot.com/mcp/readonly
+    url: https://api.githubcopilot.com/mcp/
     tools: ["*"]
     headers:
       X-MCP-Toolsets: all
