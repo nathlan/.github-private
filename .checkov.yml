@@ -1,88 +1,29 @@
-# Checkov Configuration for Azure Terraform
+# Security and compliance scanning for Terraform code - Checkov configuration
 
-# This configuration file customizes Checkov security scanning behavior
-# See: https://www.checkov.io/2.Basics/CLI%20Command%20Reference.html
-
-# Framework to scan
-framework:
-  - terraform
-
-# Output formats
-output:
-  - cli
-  - junitxml
-
-# Directories to scan
+# Config file should exist in current working directory and contain Terraform code
 directory:
-  - terraform
+- .
 
-# Soft fail mode (set to false to enforce security policies)
+# Scan Terraform code only
+framework:
+- terraform
+
+# Don't download external modules via Checkov, use `terraform init` instead 
+download-external-modules: false
+
+# Skip checks with justification
+skip-check:
+- CKV_TF_1 # Registry modules use version constraints, not commit hashes
+
+# Output settings
+compact: true
+quiet: true
+output: 
+- cli
+- sarif
+output-file-path: console,results.sarif
+
+# Fail deployment on error
 soft-fail: false
 
-# Skip specific checks (use sparingly and document why)
-skip-check:
-  # Example: Skip check for public storage account access if required
-  # - CKV_AZURE_33
-  # Reason: Public access required for static website hosting
-
-# Suppress specific resources (when you have valid exceptions)
-# skip-path:
-#   - terraform/legacy-resources.tf
-
-# External checks directory (for custom policies)
-# external-checks-dir:
-#   - .checkov-policies/
-
-# Compact output (less verbose)
-compact: false
-
-# Download external modules for scanning
-download-external-modules: true
-
-# Evaluate variables (try to resolve variable values)
-evaluate-variables: true
-
-# Severity threshold (fail only on specific severities)
-# Options: CRITICAL, HIGH, MEDIUM, LOW
-# check-severity: HIGH
-
-# Block list for specific policies (alternative to skip-check)
-# block-list-secret-scan:
-#   - PATTERN_TO_IGNORE
-
-# Common Azure Checks Reference:
-#
-# Storage Accounts:
-#   CKV_AZURE_33  - Storage account public access
-#   CKV_AZURE_35  - Storage account encryption
-#   CKV_AZURE_36  - Storage account secure transfer
-#   CKV_AZURE_43  - Storage account private endpoints
-#
-# Networking:
-#   CKV_AZURE_9   - NSG rule - no inbound from 0.0.0.0/0 to port 22
-#   CKV_AZURE_10  - NSG rule - no inbound from 0.0.0.0/0 to port 3389
-#   CKV_AZURE_12  - Network Watcher flow logs enabled
-#   CKV_AZURE_77  - Ensure security group has at least one inbound rule
-#
-# Virtual Machines:
-#   CKV_AZURE_1   - VM managed disk encryption
-#   CKV_AZURE_149 - VM disk encryption set is encrypted with CMK
-#   CKV_AZURE_50  - VM has monitoring agent installed
-#
-# Key Vault:
-#   CKV_AZURE_40  - Key Vault SKU is standard or premium
-#   CKV_AZURE_109 - Key Vault enables purge protection
-#   CKV_AZURE_110 - Key Vault enables soft delete
-#
-# Databases:
-#   CKV_AZURE_23  - SQL Server ADS Vulnerability Assessment
-#   CKV_AZURE_24  - SQL Server ADS Threat Detection
-#   CKV_AZURE_53  - PostgreSQL enables SSL enforcement
-#
-# Kubernetes (AKS):
-#   CKV_AZURE_4   - AKS RBAC enabled
-#   CKV_AZURE_6   - AKS Network Policy configured
-#   CKV_AZURE_7   - AKS Dashboard disabled
-#   CKV_AZURE_117 - AKS Azure Policy Add-On enabled
-#
-# For full list, see: https://www.checkov.io/5.Policy%20Index/azure.html
+# For more options: https://www.checkov.io/2.Basics/CLI%20Command%20Reference.html
