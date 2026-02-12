@@ -1,5 +1,5 @@
 {
-  "name": "GitHub Private Terraform Development",
+  "name": "GitHub + Terraform Development",
   "image": "mcr.microsoft.com/devcontainers/base:ubuntu",
 
   "features": {
