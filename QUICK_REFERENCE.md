@@ -7,6 +7,33 @@ Child Workflow (Your Repo)  →  Parent Workflow (Central)  →  Azure
 terraform-deploy.yml            azure-terraform-deploy.yml     Infrastructure
 ```
 
+## 🏗️ Repository Templates
+
+### alz-workload-template
+
+**When creating new workload repositories, ALWAYS use the template:**
+
+```terraform
+resource "github_repository" "new_workload" {
+  name = "my-workload"
+  
+  # CRITICAL: Use template for all workload repos
+  template {
+    owner      = "nathlan"
+    repository = "alz-workload-template"
+  }
+}
+```
+
+**What's Included:**
+- ✅ Pre-configured GitHub Actions workflows
+- ✅ Terraform directory structure
+- ✅ Azure OIDC authentication setup
+- ✅ Security scanning (Checkov)
+- ✅ Comprehensive README
+
+**See:** `docs/TEMPLATE_REPOSITORY_GUIDE.md` for details
+
 ## 📝 Workflow Inputs
 
 | Input | Required | Default | Description |

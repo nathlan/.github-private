@@ -205,6 +205,239 @@ Provide user with:
 
 ---
 
+## Repository Creation from Templates
+
+**CRITICAL: When creating new repositories, ALWAYS use the appropriate template repository as the base.**
+
+### Standard Template Repository
+
+For Azure workload repositories, use: **`nathlan/alz-workload-template`**
+
+This template repository includes:
+- Pre-configured GitHub Actions workflows (child workflow pattern)
+- Terraform directory structure with starter files
+- Azure OIDC authentication setup
+- Documentation and best practices
+- Security scanning and validation workflows
+
+### Creating Repositories from Templates
+
+**Resource:** Use `github_repository` with `template` block:
+
+```hcl
+resource "github_repository" "new_workload" {
+  name        = "workload-name"
+  description = "Workload description"
+  visibility  = "internal"  # or "private"
+
+  # CRITICAL: Always specify template for new repos
+  template {
+    owner      = "nathlan"
+    repository = "alz-workload-template"
+  }
+
+  # Standard settings
+  has_issues             = true
+  has_projects           = false
+  has_wiki              = false
+  delete_branch_on_merge = true
+  allow_squash_merge     = true
+  allow_merge_commit     = false
+  allow_rebase_merge     = false
+
+  topics = ["azure", "terraform", "workload"]
+
+  lifecycle {
+    prevent_destroy = false  # Allow deletion in non-production
+  }
+}
+```
+
+### Template Repository Requirements
+
+**Before using a repository as a template:**
+1. Verify the repository is marked as a template (Settings → Template repository checkbox)
+2. Ensure the template contains necessary files and workflows
+3. Validate the template structure matches organizational standards
+
+**Template Repository Structure:**
+```
+alz-workload-template/
+├── .github/
+│   └── workflows/
+│       └── terraform-deploy.yml    # Child workflow calling parent
+├── terraform/
+│   ├── main.tf                     # Starter Terraform config
+│   ├── variables.tf                # Common variables
+│   ├── outputs.tf                  # Standard outputs
+│   └── terraform.tf                # Backend and provider config
+├── .gitignore                      # Terraform ignore patterns
+└── README.md                       # Template documentation
+```
+
+### When to Use Templates vs. Empty Repositories
+
+**Use Template Repository:**
+- ✅ Azure workload repositories (use `alz-workload-template`)
+- ✅ Repositories that need pre-configured CI/CD
+- ✅ Repositories following established patterns
+- ✅ New projects that benefit from organizational standards
+
+**Use Empty Repository:**
+- Only when creating infrastructure repositories (e.g., `alz-subscriptions`, `.github-workflows`)
+- Special-purpose repositories that don't fit template patterns
+- Template repositories themselves
+
+### Example: Creating an Azure Workload Repository
+
+```hcl
+# variables.tf
+variable "workload_name" {
+  description = "Name of the workload (kebab-case)"
+  type        = string
+  validation {
+    condition     = can(regex("^[a-z0-9-]{3,30}$", var.workload_name))
+    error_message = "Workload name must be kebab-case, 3-30 characters"
+  }
+}
+
+variable "team_name" {
+  description = "GitHub team slug for repository access"
+  type        = string
+}
+
+variable "workload_description" {
+  description = "Description of the workload"
+  type        = string
+  default     = ""
+}
+
+# data.tf
+data "github_team" "workload_team" {
+  slug = var.team_name
+}
+
+data "github_team" "platform_engineering" {
+  slug = "platform-engineering"
+}
+
+# main.tf
+resource "github_repository" "workload" {
+  name        = var.workload_name
+  description = var.workload_description
+  visibility  = "internal"
+
+  # ALWAYS use template for new workload repos
+  template {
+    owner      = "nathlan"
+    repository = "alz-workload-template"
+  }
+
+  has_issues             = true
+  has_projects           = false
+  has_wiki              = false
+  delete_branch_on_merge = true
+  allow_squash_merge     = true
+  allow_merge_commit     = false
+  allow_rebase_merge     = false
+
+  topics = concat(
+    ["azure", "terraform"],
+    var.workload_name != "" ? [var.workload_name] : []
+  )
+}
+
+# Team access
+resource "github_team_repository" "workload_team_maintain" {
+  team_id    = data.github_team.workload_team.id
+  repository = github_repository.workload.name
+  permission = "maintain"
+}
+
+resource "github_team_repository" "platform_admin" {
+  team_id    = data.github_team.platform_engineering.id
+  repository = github_repository.workload.name
+  permission = "admin"
+}
+
+# Branch protection
+resource "github_repository_ruleset" "workload_main_protection" {
+  name        = "main-branch-protection"
+  repository  = github_repository.workload.name
+  target      = "branch"
+  enforcement = "active"
+
+  conditions {
+    ref_name {
+      include = ["refs/heads/main"]
+      exclude = []
+    }
+  }
+
+  rules {
+    pull_request {
+      required_approving_review_count   = 1
+      dismiss_stale_reviews_on_push     = true
+      require_code_owner_review         = false
+      require_last_push_approval        = false
+      required_review_thread_resolution = true
+    }
+
+    required_status_checks {
+      required_check {
+        context = "terraform-plan"
+      }
+      required_check {
+        context = "security-scan"
+      }
+      strict_required_status_checks_policy = true
+    }
+
+    non_fast_forward = true
+  }
+
+  bypass_actors {
+    actor_id    = data.github_team.platform_engineering.id
+    actor_type  = "Team"
+    bypass_mode = "pull_request"
+  }
+}
+
+# outputs.tf
+output "repository_name" {
+  description = "Name of the created repository"
+  value       = github_repository.workload.name
+}
+
+output "repository_url" {
+  description = "URL of the repository"
+  value       = github_repository.workload.html_url
+}
+
+output "repository_id" {
+  description = "GitHub repository ID"
+  value       = github_repository.workload.repo_id
+}
+```
+
+### Template Repository Maintenance
+
+**Updating the Template:**
+- Changes to the template repository automatically apply to new repositories created from it
+- Existing repositories created from the template are NOT automatically updated
+- To update existing repos, either:
+  - Manually replicate changes
+  - Use GitHub MCP to update specific files
+  - Create migration Terraform code
+
+**Best Practices:**
+- Keep template documentation up-to-date
+- Test template changes before marking as template
+- Version control template changes
+- Document breaking changes in template updates
+
+---
+
 ## Common Patterns
 
 **Branch Protection (multiple repos):** Use `for_each` with data sources, apply `github_repository_ruleset` with required reviews, status checks

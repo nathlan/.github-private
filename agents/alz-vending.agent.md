@@ -283,7 +283,11 @@ Issue a structured handoff to the `github-config` agent. It handles all Terrafor
 Construct this exact prompt for the handoff:
 
 ```
-Create GitHub configuration for a new workload repository:
+Create GitHub configuration for a new workload repository using the alz-workload-template:
+
+**CRITICAL: Use Template Repository**
+- Template: nathlan/alz-workload-template (REQUIRED for all workload repos)
+- This ensures pre-configured workflows, Terraform structure, and standards
 
 **Repository:**
 - Name: {repo_name}
@@ -298,8 +302,9 @@ Create GitHub configuration for a new workload repository:
 
 **Branch Protection (main):**
 - Require pull request reviews: 1 approval minimum
-- Require status checks: terraform-plan, lint
+- Require status checks: terraform-plan, security-scan
 - Require up-to-date branches: true
+- Require conversation resolution: true
 
 **Team Access:**
 - {team_name}: maintain
@@ -310,11 +315,14 @@ Create GitHub configuration for a new workload repository:
   - Required reviewers: {team_name}
   - Deployment branch: main only
   - Secrets:
-    - AZURE_CLIENT_ID = "PENDING_SUBSCRIPTION_APPLY"
+    - AZURE_CLIENT_ID_PLAN = "PENDING_SUBSCRIPTION_APPLY"
+    - AZURE_CLIENT_ID_APPLY = "PENDING_SUBSCRIPTION_APPLY"
     - AZURE_TENANT_ID = "{tenant_id}"
     - AZURE_SUBSCRIPTION_ID = "PENDING_SUBSCRIPTION_APPLY"
 
 **Target repo for Terraform PR:** {github_org}/github-config
+
+**Note:** The github-config agent will generate Terraform code that creates the repository from the template, including all necessary team access and branch protection rules.
 ```
 
 ### Dependency on Phase 1
