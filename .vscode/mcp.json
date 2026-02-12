@@ -10,27 +10,9 @@
 			],
 			"type": "stdio"
 		},
-		"io.github.github/github-mcp-server": {
-			"type": "stdio",
-			"command": "docker",
-			"args": [
-				"run",
-				"-i",
-				"--rm",
-				"-e",
-				"GITHUB_PERSONAL_ACCESS_TOKEN=${input:pat}",
-				"ghcr.io/github/github-mcp-server:0.30.3"
-			],
-			"gallery": "https://api.mcp.github.com",
-			"version": "0.30.3"
+    	"github": {
+			"type": "http",
+			"url": "https://api.githubcopilot.com/mcp/"
 		}
-	},
-	"inputs": [
-		{
-			"id": "pat",
-			"type": "promptString",
-			"description": "",
-			"password": true
-		}
-	]
+	}
 }

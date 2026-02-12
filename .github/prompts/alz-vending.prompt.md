@@ -17,7 +17,7 @@ Validate the following landing zone request using **Phase 0** from your instruct
 | **Environment** | ${input:environment:Production, Development, or Test} |
 | **Location** | ${input:location:Azure region, e.g. uksouth} |
 | **Team Name** | ${input:team_name:GitHub team slug, e.g. payments-team} |
-| **Address Space** | ${input:address_space:CIDR notation, e.g. /24} |
+| **Address Space** | ${input:address_space:Prefix size only, e.g. /24} |
 | **Cost Center** | ${input:cost_center:e.g. CC-4521} |
 | **Team Email** | ${input:team_email:e.g. team@example.com} |
 | **Repository Name** | ${input:repo_name:For OIDC federation} |
