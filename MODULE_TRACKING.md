@@ -12,6 +12,7 @@ This file tracks all Terraform modules created for the organization.
 | terraform-azurerm-firewall | [Link](https://github.com/nathlan/terraform-azurerm-firewall) | v0.1.2 → v0.1.4 | 🔄 PR Open | Azure Firewall wrapper with Australian region validation |
 | terraform-azurerm-firewall-policy | [Link](https://github.com/nathlan/terraform-azurerm-firewall-policy) | v0.1.0 → v0.2.0 | 🔄 PR Open | Firewall Policy with rule collection groups |
 | terraform-azurerm-app-service | [Link](https://github.com/nathlan/terraform-azurerm-app-service) | v0.1.0 | 🚀 Created | App Service with secure defaults and naming |
+| terraform-azurerm-application-gateway | [Link](https://github.com/nathlan/terraform-azurerm-application-gateway) | v0.1.0 | 📦 Ready | App Gateway australiaeast with custom domains |
 
 ## Module Details
 
@@ -57,3 +58,16 @@ This file tracks all Terraform modules created for the organization.
 - **Submodules**: None
 - **Repository**: https://github.com/nathlan/terraform-azurerm-app-service
 - **Status**: Core module files created in main branch, ready for first release
+
+### terraform-azurerm-application-gateway
+- **AVM Source**: `Azure/avm-res-network-applicationgateway/azurerm` ~> 0.5
+- **Key Features**: australiaeast location restriction, custom domain support (FQDNs in backend pools, host_name in listeners), HTTP/2 enabled, TLS 1.2 minimum, WAF support, SSL offload, URL path routing, autoscaling, health probes
+- **Submodules**: None
+- **Repository**: Module created locally in /tmp/terraform-azurerm-application-gateway/
+- **Status**: Complete and validated - **requires manual GitHub repository creation** (MCP has read-only access)
+- **Files Ready**: All core, validation, CI/CD, examples, and documentation files complete
+- **Next Steps**: 
+  1. Create repository: `nathlan/terraform-azurerm-application-gateway`
+  2. Push files from `/tmp/terraform-azurerm-application-gateway/`
+  3. Create feature branch and PR
+  4. Merge for v0.1.0 release
