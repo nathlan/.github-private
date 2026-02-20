@@ -8,7 +8,7 @@ This file tracks all Terraform modules created for the organization.
 |-------------|----------------|----------------|--------|-------------|
 | terraform-azurerm-resource-group | [Link](https://github.com/nathlan/terraform-azurerm-resource-group) | v1.0.0 → v2.0.0 | 🔄 PR Open | Azure Resource Group with naming integration |
 | terraform-azurerm-storage-account | [Link](https://github.com/nathlan/terraform-azurerm-storage-account) | v0.1.0 → v0.2.0 | 🔄 PR Open | Storage Account with naming integration |
-| terraform-azurerm-landing-zone-vending | [Link](https://github.com/nathlan/terraform-azurerm-landing-zone-vending) | v1.0.3 | ✅ Released | Landing zones with naming, IP automation |
+| terraform-azurerm-landing-zone-vending | [Link](https://github.com/nathlan/terraform-azurerm-landing-zone-vending) | v1.0.3 → v1.1.0 | 🔄 PR Open | Landing zones with naming, IP automation |
 | terraform-azurerm-firewall | [Link](https://github.com/nathlan/terraform-azurerm-firewall) | v0.1.2 → v0.1.4 | 🔄 PR Open | Azure Firewall wrapper with Australian region validation |
 | terraform-azurerm-firewall-policy | [Link](https://github.com/nathlan/terraform-azurerm-firewall-policy) | v0.1.0 → v0.2.0 | 🔄 PR Open | Firewall Policy with rule collection groups |
 | terraform-azurerm-app-service | [Link](https://github.com/nathlan/terraform-azurerm-app-service) | v0.1.0 | 🚀 Created | App Service with secure defaults and naming |
@@ -37,6 +37,7 @@ This file tracks all Terraform modules created for the organization.
 - **Submodules**: None
 - **Latest Release**: v1.0.3 (includes v3.0.0 features: Azure naming, smart defaults, landing_zones map)
 - **Interface**: Uses `landing_zones` map with nested `spoke_vnet` configuration, `azure_address_space` for IP automation, `subscription_devtest_enabled` boolean
+- **PR**: [#11](https://github.com/nathlan/terraform-azurerm-landing-zone-vending/pull/11) - Set default budget monthly_amount to $1000
 
 ### terraform-azurerm-firewall
 - **AVM Source**: `Azure/avm-res-network-azurefirewall/azurerm` ~> 0.4.0
