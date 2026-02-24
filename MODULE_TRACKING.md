@@ -12,6 +12,7 @@ This file tracks all Terraform modules created for the organization.
 | terraform-azurerm-firewall | [Link](https://github.com/nathlan/terraform-azurerm-firewall) | v0.1.2 → v0.1.4 | 🔄 PR Open | Azure Firewall wrapper with Australian region validation |
 | terraform-azurerm-firewall-policy | [Link](https://github.com/nathlan/terraform-azurerm-firewall-policy) | v0.1.0 → v0.2.0 | 🔄 PR Open | Firewall Policy with rule collection groups |
 | terraform-azurerm-app-service | [Link](https://github.com/nathlan/terraform-azurerm-app-service) | v0.1.0 | 🚀 Created | App Service with secure defaults and naming |
+| terraform-azurerm-fabric-capacity | [Link](https://github.com/nathlan/terraform-azurerm-fabric-capacity) | v0.1.0 | 🔄 PR Open | Fabric Capacity restricted to australiaeast |
 
 ## Module Details
 
@@ -57,3 +58,9 @@ This file tracks all Terraform modules created for the organization.
 - **Submodules**: None
 - **Repository**: https://github.com/nathlan/terraform-azurerm-app-service
 - **Status**: Core module files created in main branch, ready for first release
+
+### terraform-azurerm-fabric-capacity
+- **AVM Source**: None (native `azurerm_fabric_capacity` resource - no AVM module available)
+- **Key Features**: Location enforced to `australiaeast` only, SKU validation (F2-F2048), name regex validation
+- **Submodules**: None
+- **PR**: [#1](https://github.com/nathlan/terraform-azurerm-fabric-capacity/pull/1) - Initial Fabric Capacity module
