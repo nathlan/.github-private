@@ -8,3 +8,4 @@
 *.tfstate.*
 *.tfvars
 *.tf
+results.sarif
