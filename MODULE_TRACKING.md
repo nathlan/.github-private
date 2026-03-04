@@ -12,6 +12,7 @@ This file tracks all Terraform modules created for the organization.
 | terraform-azurerm-firewall | [Link](https://github.com/nathlan/terraform-azurerm-firewall) | v0.1.2 → v0.1.4 | 🔄 PR Open | Azure Firewall wrapper with Australian region validation |
 | terraform-azurerm-firewall-policy | [Link](https://github.com/nathlan/terraform-azurerm-firewall-policy) | v0.1.0 → v0.2.0 | 🔄 PR Open | Firewall Policy with rule collection groups |
 | terraform-azurerm-app-service | [Link](https://github.com/nathlan/terraform-azurerm-app-service) | v0.1.0 | 🚀 Created | App Service with secure defaults and naming |
+| terraform-azurerm-event-hub | [Link](https://github.com/nathlan/terraform-azurerm-event-hub) | v0.1.0 | 🔄 PR Open | Event Hub Namespace restricted to AU/NZ regions |
 
 ## Module Details
 
@@ -57,3 +58,9 @@ This file tracks all Terraform modules created for the organization.
 - **Submodules**: None
 - **Repository**: https://github.com/nathlan/terraform-azurerm-app-service
 - **Status**: Core module files created in main branch, ready for first release
+
+### terraform-azurerm-event-hub
+- **AVM Source**: `Azure/avm-res-eventhub-namespace/azurerm` ~> 0.1.0
+- **Key Features**: AU/NZ region restriction (australiaeast, australiasoutheast, australiacentral, australiacentral2, newzealandnorth), secure defaults (public network access off, SAS auth off), event hubs map, private endpoints, diagnostic settings, managed identities, CMK support
+- **Submodules**: None
+- **PR**: [#1](https://github.com/nathlan/terraform-azurerm-event-hub/pull/1) - Initial module with AU/NZ region restriction
