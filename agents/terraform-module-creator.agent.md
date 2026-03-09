@@ -53,7 +53,7 @@ Expert Terraform module creator building private modules that consume Azure Veri
 1. **Create Locally in `/tmp/`**: ALL work in `/tmp/<module-name>/`, NEVER in `.github-private` repo. Follow HashiCorp structure. Use `modules/` for child resource types. **MUST include ALL required files**:
    - Core: `main.tf`, `variables.tf`, `outputs.tf`, `versions.tf`
    - Documentation: `README.md` (with terraform-docs generated content), `LICENSE`, `.gitignore`
-   - Validation: `.tflint.hcl`, `.checkov.yml`, `.terraform-docs.yml`
+   - Validation: Copy from `.templates/` in `.github-private` repo: `.tflint.hcl`, `.checkov.yml`, `.terraform-docs.yml`
    - Workflow: `.github/workflows/release-on-merge.yml`
    - Examples: `examples/basic/main.tf` and `examples/basic/README.md` (with terraform-docs)
 2. **Generate Docs**: Use `terraform-docs` (not manual) for README.md and all examples.
@@ -76,19 +76,19 @@ Expert Terraform module creator building private modules that consume Azure Veri
    - **ALWAYS create pull request** using GitHub MCP create_pull_request with `draft: true` initially
    - **NEVER push directly to main/default branch** - PRs are MANDATORY for all changes
 6. **Finalize PR**: Mark PR as ready for review by updating with `draft: false` when complete
-7. **Link and Track**: Add PR link to `.github-private` issue/PR if applicable, update `MODULE_TRACKING.md`
+7. **Link and Track**: Add PR link to `.github-private` issue/PR if applicable, update `docs/MODULE_TRACKING.md`
 8. **Cleanup**: Verify NO module files in `.github-private`. Run `git status` before committing.
 
 **Pre-Commit Checklist:**
 - `git status` - review ALL files
-- ONLY `MODULE_TRACKING.md` (and agent files if requested) staged
+- ONLY `docs/MODULE_TRACKING.md` (and agent files if requested) staged
 - NO LICENSE/README.md changes (unless requested)
 - NO .tf files, binaries, downloads
 - ALL work in `/tmp/`
 
 **`.github-private` repo:**
 - ❌ NO: .tf files, module docs/examples, binaries, archives, cloned files, LICENSE/README.md changes (unless requested)
-- ✅ YES: MODULE_TRACKING.md, agents/*.agent.md, templates, general docs (if requested)
+- ✅ YES: docs/MODULE_TRACKING.md, agents/*.agent.md, templates, general docs (if requested)
 
 ## Module Creation
 
@@ -101,7 +101,7 @@ Expert Terraform module creator building private modules that consume Azure Veri
   - Markers: `<!-- BEGIN_TF_DOCS -->` and `<!-- END_TF_DOCS -->`
   - Include minimal custom content (2-5 lines): description, single usage example
   - Must be present before pushing to remote
-- **Validation configs are MANDATORY**: `.tflint.hcl`, `.checkov.yml`, `.terraform-docs.yml` must be present
+- **Validation configs are MANDATORY**: Copy `.tflint.hcl`, `.checkov.yml`, `.terraform-docs.yml` from `.templates/` in the `.github-private` repo into the module root
 - **Examples are MANDATORY**: `examples/basic/` directory with `main.tf` and `README.md` (terraform-docs generated)
 - **For submodules**: Run terraform-docs in EACH submodule dir with source path (e.g., `source = "github.com/org/module//modules/blob"`)
 
@@ -308,9 +308,28 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 ```
 
+## Template Files
+
+Standard validation and documentation config templates are stored in `.templates/` at the root of the `.github-private` repo. When creating a new module, **copy these files** into the module root:
+
+```bash
+# Copy templates from .github-private into the module working directory
+cp /home/vscode/.github-private/.templates/.checkov.yml /tmp/<module-name>/
+cp /home/vscode/.github-private/.templates/.tflint.hcl /tmp/<module-name>/
+cp /home/vscode/.github-private/.templates/.terraform-docs.yml /tmp/<module-name>/
+```
+
+| Template | Purpose |
+|---|---|
+| `.templates/.checkov.yml` | Checkov security scanning config (skip CKV_TF_1, SARIF output) |
+| `.templates/.tflint.hcl` | TFLint config with azurerm plugin and naming conventions |
+| `.templates/.terraform-docs.yml` | terraform-docs config for README generation |
+
+For modules **with submodules**, modify the copied `.terraform-docs.yml` to enable recursive mode (see below).
+
 ## terraform-docs Configuration
 
-**Without submodules**: Use template `.terraform-docs.yml`
+**Without submodules**: Use the `.terraform-docs.yml` copied from `.templates/`
 ```bash
 terraform-docs markdown table --config .terraform-docs.yml .
 ```
@@ -374,7 +393,7 @@ settings: {anchor: true, default: true, escape: false, indent: 2, required: true
 **Required Files** (ALL must be present before deployment):
 - **Core Terraform**: `main.tf`, `variables.tf`, `outputs.tf`, `versions.tf`
 - **Documentation**: `README.md` (terraform-docs generated), `LICENSE`, `.gitignore`
-- **Validation Configs**: `.tflint.hcl`, `.checkov.yml`, `.terraform-docs.yml` 
+- **Validation Configs**: `.tflint.hcl`, `.checkov.yml`, `.terraform-docs.yml` (copied from `.templates/` in `.github-private`)
 - **CI/CD**: `.github/workflows/release-on-merge.yml`
 - **Examples**: `examples/basic/main.tf` and `examples/basic/README.md` (terraform-docs generated)
 **Code Quality**: Descriptions, formatting, no hardcoded values, tags, lifecycle blocks, validation rules
@@ -473,7 +492,7 @@ CORRECT approach:
 ✅ Use github-mcp-server-create_branch to create feature branch in remote repo
 ✅ Use github-mcp-server-push_files to push updated files to remote repo
 ✅ Use github-mcp-server-create_pull_request to create PR in remote repo
-✅ Update MODULE_TRACKING.md in .github-private (only this file)
+✅ Update docs/MODULE_TRACKING.md in .github-private (only this file)
 ```
 
 ### Key Rules
@@ -483,12 +502,12 @@ CORRECT approach:
 - **No git commands** for remote repos - GitHub MCP handles everything
 
 ### What to Commit to .github-private
-- ✅ `MODULE_TRACKING.md` updates (version, PR links, status)
+- ✅ `docs/MODULE_TRACKING.md` updates (version, PR links, status)
 - ✅ Agent instruction updates (if improving agent behavior)
 - ✅ Planning/tracking documents (if creating new guides)
 - ❌ NEVER: .tf files, module READMEs, module examples, module code
 
-## MODULE_TRACKING.md Maintenance
+## docs/MODULE_TRACKING.md Maintenance
 
 **Keep Clean and Succinct**:
 - Track ONLY current active modules in a simple table format

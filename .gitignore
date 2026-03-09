@@ -6,5 +6,20 @@
 .terraform.lock.hcl
 *.tfstate
 *.tfstate.*
-*.tfvars
-*.tf
+*.tfplan
+*.tfplan.*
+crash.log
+crash.*.log
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+.terraformrc
+terraform.rc
+
+# Terraform variables (contains sensitive data)
+*.auto.tfvars
+*.auto.tfvars.json
+
+# Ignore CLI configuration files
+.terraform.d/
