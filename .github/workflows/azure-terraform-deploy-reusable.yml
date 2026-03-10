@@ -34,6 +34,11 @@ on:
         required: false
         type: string
         default: 'uksouth'
+      azure-subscription-id:
+        description: 'Azure Subscription ID (overrides AZURE_SUBSCRIPTION_ID secret)'
+        required: false
+        type: string
+        default: '0762d4b7-f4fd-4b09-abe5-262dfdd57231'
     secrets:
       AZURE_CLIENT_ID:
         description: 'Azure Client ID for OIDC authentication'
@@ -42,8 +47,8 @@ on:
         description: 'Azure Tenant ID for OIDC authentication'
         required: true
       AZURE_SUBSCRIPTION_ID:
-        description: 'Azure Subscription ID for OIDC authentication'
-        required: true
+        description: 'Azure Subscription ID for OIDC authentication (optional, overrides azure-subscription-id input)'
+        required: false
 
 permissions:
   contents: read
@@ -178,7 +183,7 @@ jobs:
         with:
           client-id: ${{ secrets.AZURE_CLIENT_ID }}
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
-          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID || inputs.azure-subscription-id }}
 
       - name: Terraform Init
         working-directory: ${{ inputs.working-directory }}
@@ -186,7 +191,7 @@ jobs:
         env:
           ARM_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
           ARM_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
-          ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+          ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID || inputs.azure-subscription-id }}
           ARM_USE_OIDC: true
 
       - name: Terraform Plan
@@ -198,7 +203,7 @@ jobs:
         env:
           ARM_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
           ARM_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
-          ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+          ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID || inputs.azure-subscription-id }}
           ARM_USE_OIDC: true
           TF_VAR_azure_region: ${{ inputs.azure-region }}
 
@@ -266,7 +271,7 @@ jobs:
         with:
           client-id: ${{ secrets.AZURE_CLIENT_ID }}
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
-          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID || inputs.azure-subscription-id }}
 
       - name: Download Plan Artifact
         uses: actions/download-artifact@v4
@@ -280,7 +285,7 @@ jobs:
         env:
           ARM_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
           ARM_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
-          ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+          ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID || inputs.azure-subscription-id }}
           ARM_USE_OIDC: true
 
       - name: Terraform Apply
@@ -289,7 +294,7 @@ jobs:
         env:
           ARM_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
           ARM_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
-          ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+          ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID || inputs.azure-subscription-id }}
           ARM_USE_OIDC: true
           TF_VAR_azure_region: ${{ inputs.azure-region }}
 
@@ -300,7 +305,7 @@ jobs:
         env:
           ARM_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
           ARM_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
-          ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+          ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID || inputs.azure-subscription-id }}
           ARM_USE_OIDC: true
 
       - name: Upload Outputs
